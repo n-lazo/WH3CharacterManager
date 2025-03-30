@@ -1,12 +1,102 @@
 ﻿<Window x:Class="WH3CharacterManager.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:WH3CharacterManager"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Warhammer 3 Character Manager" Height="600" Width="800"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource DarkBrush}">
+    <Window.Resources>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        </Style>
+    </Window.Resources>
 
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Encabezado de la aplicación -->
+        <Border Grid.Row="0" Padding="10">
+            <TextBlock Text="WARHAMMER 3 CHARACTER MANAGER"
+                       FontWeight="Bold" FontSize="18"
+                       HorizontalAlignment="Center">
+            </TextBlock>
+        </Border>
+        <!-- Carpeta de personajes -->
+        <Grid Grid.Row="0" Margin="20,70,20,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="CARPETA DE PERSONAJES:" VerticalAlignment="Center" FontWeight="Bold" />
+            <TextBox x:Name="TxtFolderPath" Grid.Column="1" Margin="10,0" Style="{StaticResource GamingTextBoxStyle}" />
+            <Button x:Name="BtnBrowseFolder" 
+                    Grid.Column="2" Content="EXAMINAR" Margin="5,0"
+                    Style="{StaticResource GamingButtonStyle}" Click="BtnBrowseFolder_Click" />
+            <Button x:Name="BtnScanFolder" Grid.Column="3" Content="ESCANEAR" Margin="5,0"
+                    Style="{StaticResource GamingButtonStyle}" Click="BtnScanFolder_Click" />
+        </Grid>
+
+        <!-- Lista de personajes -->
+        <Grid Grid.Row="1" Margin="20,0,20,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ListView x:Name="LvCharacters" Grid.Column="0" Style="{StaticResource GamingListViewStyle}">
+                <ListView.Resources>
+                    <Style TargetType="GridViewColumnHeader">
+                        <Setter Property="Background" Value="{StaticResource DarkBlueBrush}" />
+                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Padding" Value="10,5" />
+                    </Style>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="BorderThickness" Value="0" />
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{StaticResource NeonBlueBrush}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource DarkBlueBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.Resources>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="NOMBRE DE ARCHIVO" Width="300"
+                                        DisplayMemberBinding="{Binding FileName}" />
+                        <GridViewColumn Header="RUTA" Width="400" DisplayMemberBinding="{Binding FilePath}" />
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <StackPanel Grid.Column="1" Margin="15,0,0,0">
+                <Button x:Name="BtnDuplicateCharacter" Content="DUPLICAR" Margin="0,0,0,15"
+                        Style="{StaticResource GamingButtonStyle}" Height="40" Width="120"
+                        Click="BtnDuplicateCharacter_Click" />
+                <Button x:Name="BtnExportCharacter" Content="EXPORTAR" Margin="0,0,0,15"
+                        Style="{StaticResource GamingButtonStyle}" Height="40" Width="120"
+                        Click="BtnExportCharacter_Click" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Barra de estado -->
+        <Border Grid.Row="2" Background="{StaticResource DarkBlueBrush}" Padding="10,5">
+            <TextBlock x:Name="StatusText" Text="LISTO" FontWeight="Bold" />
+        </Border>
     </Grid>
 </Window>
