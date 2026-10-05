@@ -1,8 +1,8 @@
 <Window x:Class="WH3CharacterManager.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Warhammer 3 Character Manager" Height="680" Width="1000"
-        MinWidth="880" MinHeight="580"
+        Title="Warhammer 3 Character Manager" Height="720" Width="1100"
+        MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         Background="{StaticResource AppBgBrush}"
@@ -133,7 +133,7 @@
                         <TextBox x:Name="TxtSearchFilter" Style="{StaticResource ModernTextBoxStyle}" 
                                  TextChanged="TxtSearchFilter_TextChanged"/>
                         <!-- Placeholder cuando está vacío -->
-                        <TextBlock Text="Escribe para buscar por nombre de personaje..." 
+                        <TextBlock Text="Buscar por nombre, clase, raza o rasgo (ej. Glade Captain, Elfos, Kurnous)..." 
                                    Foreground="{StaticResource TextMutedBrush}" FontSize="12"
                                    VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False">
                             <TextBlock.Style>
@@ -167,7 +167,7 @@
         <Grid Grid.Row="2" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="280"/>
             </Grid.ColumnDefinitions>
 
             <!-- Lista Principal de Personajes -->
@@ -219,48 +219,93 @@
                     </ListView.Resources>
                     <ListView.View>
                         <GridView>
-                            <!-- Columna con Icono y Nombre -->
-                            <GridViewColumn Header="PERSONAJE" Width="360">
+                            <!-- Columna: Nombre de Personaje con icono -->
+                            <GridViewColumn Header="PERSONAJE" Width="210">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Border Width="24" Height="24" CornerRadius="4" Background="#162234" 
-                                                    Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <Border Width="26" Height="26" CornerRadius="5" Background="#162234" 
+                                                    BorderBrush="{StaticResource CyanNeonBrush}" BorderThickness="0.8"
+                                                    Margin="0,0,8,0" VerticalAlignment="Center">
                                                 <Path Data="{StaticResource IconHeroGeometry}" Fill="{StaticResource CyanLightBrush}" 
                                                       Width="13" Height="13" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="{Binding FileName}" FontWeight="Bold" FontSize="13" 
-                                                       Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="13" 
+                                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding FileName}" FontSize="9.5" 
+                                                           Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis" MaxWidth="150"/>
+                                            </StackPanel>
                                         </StackPanel>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <!-- Tamaño con pill badge -->
-                            <GridViewColumn Header="TAMAÑO" Width="95">
+                            <!-- Columna: Clase / Héroe -->
+                            <GridViewColumn Header="CLASE / HÉROE" Width="180">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border Background="#162030" BorderBrush="{StaticResource BorderSubtleBrush}" 
+                                        <TextBlock Text="{Binding HeroClassDisplay}" FontSize="12" FontWeight="SemiBold" 
+                                                   Foreground="{StaticResource CyanNeonBrush}" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <!-- Columna: Raza / Cultura -->
+                            <GridViewColumn Header="RAZA" Width="110">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#141D2D" BorderBrush="{StaticResource BorderSubtleBrush}" 
                                                 BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding FormattedFileSize}" FontSize="11" 
-                                                       Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding RaceDisplay}" FontSize="11" 
+                                                       Foreground="{StaticResource TextSecondaryBrush}"/>
                                         </Border>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <!-- Fecha -->
-                            <GridViewColumn Header="MODIFICADO" Width="140">
+                            <!-- Columna: Nivel -->
+                            <GridViewColumn Header="NIVEL" Width="65">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding FormattedLastModified}" FontSize="12" 
-                                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                        <Border Background="#14261C" BorderBrush="#059669" 
+                                                BorderThickness="1" CornerRadius="4" Padding="5,2" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding LevelDisplay}" FontSize="11" FontWeight="Bold" 
+                                                       Foreground="#34D399"/>
+                                        </Border>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <!-- Ruta -->
-                            <GridViewColumn Header="RUTA" Width="220" DisplayMemberBinding="{Binding FilePath}"/>
+                            <!-- Columna: Rasgo Innato -->
+                            <GridViewColumn Header="RASGO INNATO" Width="135">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding TraitDisplay}" FontSize="11" 
+                                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <!-- Columna: Tamaño -->
+                            <GridViewColumn Header="TAMAÑO" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding FormattedFileSize}" FontSize="11" 
+                                                   Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <!-- Columna: Modificado -->
+                            <GridViewColumn Header="MODIFICADO" Width="120">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding FormattedLastModified}" FontSize="11" 
+                                                   Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -284,7 +329,7 @@
                 </Border>
             </Grid>
 
-            <!-- Panel Lateral de Acciones y Detalles -->
+            <!-- Panel Lateral de Acciones y Ficha Detallada -->
             <StackPanel Grid.Column="1">
                 <!-- Tarjeta de Acciones -->
                 <Border Background="{StaticResource SurfaceCardBrush}" 
@@ -318,39 +363,80 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Tarjeta de Detalles del Personaje Seleccionado -->
+                <!-- Tarjeta de Ficha de Personaje -->
                 <Border Background="{StaticResource SurfaceCardBrush}" 
                         BorderBrush="{StaticResource BorderSubtleBrush}" 
                         BorderThickness="1" CornerRadius="8" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="DETALLES" FontSize="11" FontWeight="Bold" 
+                        <TextBlock Text="FICHA DEL PERSONAJE" FontSize="11" FontWeight="Bold" 
                                    Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,10"/>
 
                         <!-- Estado con personaje seleccionado -->
                         <StackPanel x:Name="CardSelectedInfo" Visibility="Collapsed">
-                            <TextBlock Text="Nombre del Archivo:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
-                            <TextBlock x:Name="TxtSelectedName" Text="Tyrion.twc" FontSize="13" FontWeight="Bold" 
-                                       Foreground="{StaticResource CyanNeonBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            <!-- Nombre -->
+                            <TextBlock Text="Nombre:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                            <TextBlock x:Name="TxtSelectedName" Text="HawkShisho" FontSize="15" FontWeight="Bold" 
+                                       Foreground="{StaticResource CyanNeonBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
-                            <TextBlock Text="Tamaño:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
-                            <TextBlock x:Name="TxtSelectedSize" Text="1.16 KB" FontSize="12" 
-                                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                            <!-- Clase y Rol -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Clase:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                                    <TextBlock x:Name="TxtSelectedClass" Text="Glade Captain" FontSize="12" FontWeight="SemiBold" 
+                                               Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="Nivel:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                                    <Border Background="#14261C" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                        <TextBlock x:Name="TxtSelectedLevel" Text="Nv. 2" FontSize="11" FontWeight="Bold" Foreground="#34D399"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
 
-                            <TextBlock Text="Última modificación:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
-                            <TextBlock x:Name="TxtSelectedDate" Text="2026-10-05 09:30" FontSize="12" 
-                                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,14"/>
+                            <!-- Raza y Rasgo -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                    <TextBlock Text="Raza:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                                    <TextBlock x:Name="TxtSelectedRace" Text="Elfos Silvanos" FontSize="11.5" 
+                                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                                    <TextBlock Text="Rasgo:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                                    <TextBlock x:Name="TxtSelectedTrait" Text="Weapon Master" FontSize="11.5" 
+                                               Foreground="{StaticResource CyanLightBrush}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Grid>
 
-                            <Border Background="#102538" BorderBrush="{StaticResource CyanNeonBrush}" BorderThickness="1" 
-                                    CornerRadius="4" Padding="8,5">
-                                <TextBlock Text="Doble clic en la lista para duplicar directamente" FontSize="11" 
+                            <!-- Habilidades -->
+                            <TextBlock Text="Habilidades aprendidas:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                            <TextBlock x:Name="TxtSelectedSkills" Text="Foe-Seeker" FontSize="11" 
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                            <!-- Archivo -->
+                            <TextBlock Text="Archivo en disco:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                            <TextBlock x:Name="TxtSelectedFileName" Text="a681...2827.twc" FontSize="10" 
+                                       Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                            <!-- Tip doble clic -->
+                            <Border Background="#102538" BorderBrush="{StaticResource CyanNeonBrush}" BorderThickness="0.8" 
+                                    CornerRadius="4" Padding="8,6">
+                                <TextBlock Text="Doble clic en la lista para duplicar este personaje" FontSize="11" 
                                            Foreground="{StaticResource CyanLightBrush}" TextWrapping="Wrap" TextAlignment="Center"/>
                             </Border>
                         </StackPanel>
 
                         <!-- Estado sin selección -->
                         <StackPanel x:Name="CardNoSelection">
-                            <TextBlock Text="Ningún personaje seleccionado." FontSize="12" 
-                                       Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,15"/>
+                            <TextBlock Text="Selecciona un personaje de la lista para ver su ficha completa y opciones." FontSize="12" 
+                                       Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,20"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

@@ -75,7 +75,7 @@ public partial class MainWindow : Window
         try
         {
             SetScanningState(true);
-            StatusText.Text = "Escaneando personajes...";
+            StatusText.Text = "Escaneando personajes y analizando atributos...";
             StatusDot.Fill = (Brush)FindResource("CyanNeonBrush");
 
             IReadOnlyList<CharacterFile> characters = await _scannerService.ScanDirectoryAsync(folderPath);
@@ -174,7 +174,11 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(_searchText))
             return true;
 
-        return character.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return character.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+               character.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+               character.HeroClassDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+               character.RaceDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+               character.TraitDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
     }
 
     private void ApplyFilter()
@@ -213,9 +217,22 @@ public partial class MainWindow : Window
             BtnDuplicateCharacter.IsEnabled = true;
             BtnExportCharacter.IsEnabled = true;
 
-            TxtSelectedName.Text = selected.FileName + ".twc";
-            TxtSelectedSize.Text = selected.FormattedFileSize;
-            TxtSelectedDate.Text = selected.FormattedLastModified;
+            TxtSelectedName.Text = selected.DisplayName;
+            TxtSelectedClass.Text = selected.HeroClassDisplay;
+            TxtSelectedRace.Text = selected.RaceDisplay;
+            TxtSelectedLevel.Text = selected.LevelDisplay;
+            TxtSelectedTrait.Text = selected.TraitDisplay;
+
+            if (selected.Metadata?.Skills.Count > 0)
+            {
+                TxtSelectedSkills.Text = string.Join(", ", selected.Metadata.Skills);
+            }
+            else
+            {
+                TxtSelectedSkills.Text = "Habilidades base de campaña";
+            }
+
+            TxtSelectedFileName.Text = selected.FileName + ".twc";
 
             CardSelectedInfo.Visibility = Visibility.Visible;
             CardNoSelection.Visibility = Visibility.Collapsed;
@@ -269,7 +286,7 @@ public partial class MainWindow : Window
 
         var saveDialog = new SaveFileDialog
         {
-            FileName = selectedCharacter.FileName + ".twc",
+            FileName = selectedCharacter.DisplayName + ".twc",
             Filter = "Warhammer Character Files (*.twc)|*.twc",
             Title = "Exportar personaje"
         };

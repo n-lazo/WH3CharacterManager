@@ -30,12 +30,25 @@ public class CharacterScannerService : ICharacterScannerService
             foreach (FileInfo file in files)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                CharacterMetadata? metadata = null;
+                try
+                {
+                    byte[] fileBytes = File.ReadAllBytes(file.FullName);
+                    metadata = TwcMetadataParser.Parse(fileBytes);
+                }
+                catch
+                {
+                    // Fallback silencioso si el archivo está corrupto o es inválido
+                }
+
                 list.Add(new CharacterFile
                 {
                     FilePath = file.FullName,
                     FileName = Path.GetFileNameWithoutExtension(file.Name),
                     FileSizeBytes = file.Length,
-                    LastModified = file.LastWriteTime
+                    LastModified = file.LastWriteTime,
+                    Metadata = metadata
                 });
             }
 
