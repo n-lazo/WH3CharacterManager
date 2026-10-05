@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
     private bool _isSyncingSort;
     private bool _isSyncingSelection;
+    private bool _isInitialized;
     private DispatcherTimer? _toastTimer;
 
     public MainWindow() : this(null)
@@ -39,11 +40,12 @@ public partial class MainWindow : Window
 
     public MainWindow(ICharacterScannerService? scannerService)
     {
-        InitializeComponent();
         _scannerService = scannerService ?? new CharacterScannerService();
         _characterFiles = new ObservableCollection<CharacterFile>();
         _raceFilters = new ObservableCollection<RaceFilterItem>();
-        
+
+        InitializeComponent();
+
         LvCharacters.ItemsSource = _characterFiles;
         LbGallery.ItemsSource = _characterFiles;
         IcRaceFilterChips.ItemsSource = _raceFilters;
@@ -55,6 +57,8 @@ public partial class MainWindow : Window
         string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         string defaultPath = Path.Combine(appDataPath, "The Creative Assembly", "Warhammer3", "saved_characters");
         TxtFolderPath.Text = defaultPath;
+
+        _isInitialized = true;
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -284,6 +288,7 @@ public partial class MainWindow : Window
 
     private void TxtSearchFilter_TextChanged(object sender, TextChangedEventArgs e)
     {
+        if (!_isInitialized) return;
         _searchText = TxtSearchFilter.Text.Trim();
         BtnClearSearch.Visibility = string.IsNullOrEmpty(_searchText) ? Visibility.Collapsed : Visibility.Visible;
         ApplyFilter();
@@ -296,7 +301,7 @@ public partial class MainWindow : Window
 
     private void CbRoleFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (CbRoleFilter == null) return;
+        if (!_isInitialized || CbRoleFilter == null) return;
         _selectedRoleFilter = CbRoleFilter.SelectedIndex switch
         {
             1 => RoleFilterMode.LordsOnly,
@@ -353,6 +358,7 @@ public partial class MainWindow : Window
 
     private void ApplyFilter()
     {
+        if (!_isInitialized) return;
         _charactersView?.Refresh();
         UpdateCounters();
         UpdateEmptyState();
@@ -360,6 +366,7 @@ public partial class MainWindow : Window
 
     private void UpdateCounters()
     {
+        if (!_isInitialized || TxtCharacterCountBadge == null) return;
         int total = _characterFiles.Count;
         TxtCharacterCountBadge.Text = $"{total} {(total == 1 ? "Personaje" : "Personajes")}";
 
@@ -370,16 +377,19 @@ public partial class MainWindow : Window
         if (_charactersView != null && hasFilter)
         {
             int filtered = _charactersView.Cast<object>().Count();
-            TxtFilterStatus.Text = $"{filtered} de {total}";
+            if (TxtFilterStatus != null)
+                TxtFilterStatus.Text = $"{filtered} de {total}";
         }
         else
         {
-            TxtFilterStatus.Text = string.Empty;
+            if (TxtFilterStatus != null)
+                TxtFilterStatus.Text = string.Empty;
         }
     }
 
     private void UpdateEmptyState()
     {
+        if (!_isInitialized || EmptyStateOverlay == null) return;
         bool hasVisibleItems = _charactersView != null && _charactersView.Cast<object>().Any();
         EmptyStateOverlay.Visibility = hasVisibleItems ? Visibility.Collapsed : Visibility.Visible;
     }
@@ -493,7 +503,7 @@ public partial class MainWindow : Window
 
     private void CbSortSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_isSyncingSort || CbSortSelector == null || CbSortSelector.SelectedItem is not ComboBoxItem selectedItem)
+        if (!_isInitialized || _isSyncingSort || CbSortSelector == null || CbSortSelector.SelectedItem is not ComboBoxItem selectedItem)
             return;
 
         string? prop = selectedItem.Tag as string;
@@ -517,6 +527,7 @@ public partial class MainWindow : Window
 
     private void ApplySort(string propertyName, ListSortDirection direction)
     {
+        if (!_isInitialized) return;
         _currentSortProperty = propertyName;
         _currentSortDirection = direction;
 
@@ -530,7 +541,7 @@ public partial class MainWindow : Window
             }
         }
 
-        if (SortDirectionIcon != null)
+        if (SortDirectionIcon != null && BtnSortDirection != null)
         {
             SortDirectionIcon.Data = (Geometry)FindResource(
                 direction == ListSortDirection.Ascending ? "IconSortAscGeometry" : "IconSortDescGeometry");

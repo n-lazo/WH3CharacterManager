@@ -103,4 +103,31 @@ public class FilterAndSortTests
         Assert.True(isLord1);
         Assert.False(isLord2);
     }
+
+    [Fact]
+    public void MainWindow_Initialization_DoesNotThrow()
+    {
+        Exception? thrown = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                if (System.Windows.Application.Current == null)
+                {
+                    var app = new App();
+                    app.InitializeComponent();
+                }
+                var window = new MainWindow();
+            }
+            catch (Exception ex)
+            {
+                thrown = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(thrown);
+    }
 }
