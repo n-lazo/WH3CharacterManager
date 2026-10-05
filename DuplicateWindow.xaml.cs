@@ -1,145 +1,151 @@
-﻿using System.IO;
-using System.Text;
+using System.IO;
 using System.Windows;
-using MessageBox = System.Windows.MessageBox;
+using Microsoft.Win32;
+using WH3CharacterManager.Models;
+using WH3CharacterManager.Services;
 
 namespace WH3CharacterManager;
 
 public partial class DuplicateWindow : Window
 {
-    private CharacterFile originalCharacter;
+    private readonly CharacterFile _originalCharacter;
+    private readonly ICharacterDuplicationService _duplicationService;
+    private CancellationTokenSource? _cancellationTokenSource;
+    private bool _isDuplicating;
+
     public int CharactersGenerated { get; private set; }
 
-    public DuplicateWindow(CharacterFile character)
+    public DuplicateWindow(CharacterFile character, ICharacterDuplicationService? duplicationService = null)
     {
         InitializeComponent();
-        originalCharacter = character;
+        _originalCharacter = character ?? throw new ArgumentNullException(nameof(character));
+        _duplicationService = duplicationService ?? new CharacterDuplicationService();
         LblCharacterName.Content = character.FileName;
     }
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
     {
+        if (_isDuplicating)
+        {
+            BtnCancel.IsEnabled = false;
+            BtnCancel.Content = "CANCELANDO...";
+            _cancellationTokenSource?.Cancel();
+            return;
+        }
+
         Close();
     }
 
-    private void BtnDuplicate_Click(object sender, RoutedEventArgs e)
+    private async void BtnDuplicate_Click(object sender, RoutedEventArgs e)
     {
-        try
+        if (!int.TryParse(TxtCopies.Text.Trim(), out int copies) || copies <= 0)
         {
-            int copies;
-            if (!int.TryParse(TxtCopies.Text, out copies) || copies <= 0)
-            {
-                MessageBox.Show("Por favor, introduzca un número válido de copias.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            string outputFolderPath;
-            if (RbSameFolder.IsChecked == true)
-            {
-                outputFolderPath = Path.GetDirectoryName(originalCharacter.FilePath);
-            }
-            else
-            {
-                var dialog = new System.Windows.Forms.FolderBrowserDialog();
-                dialog.Description = "Selecciona la carpeta de destino para las copias";
-                    
-                var result = dialog.ShowDialog();
-                if (result != System.Windows.Forms.DialogResult.OK)
-                {
-                    return;
-                }
-                    
-                outputFolderPath = dialog.SelectedPath;
-            }
-
-            // Extraer la base del ID y el número
-            (string baseIdPersonaje, int numeroIdOriginal) = ExtraerBaseId(originalCharacter.FileName);
-
-            // Comenzar la duplicación
-            PbProgress.Maximum = copies;
-            PbProgress.Value = 0;
-            CharactersGenerated = 0;
-
-            for (int i = 1; i <= copies; i++)
-            {
-                int nuevoNumeroId = numeroIdOriginal + i;
-                string nuevoIdPersonaje = baseIdPersonaje + nuevoNumeroId;
-
-                byte[] datosModificados = ReemplazarIdEnDatos(
-                    originalCharacter.FileContent,
-                    originalCharacter.FileName,
-                    nuevoIdPersonaje
-                );
-
-                string nuevaRutaArchivo = Path.Combine(outputFolderPath, $"{nuevoIdPersonaje}.twc");
-                File.WriteAllBytes(nuevaRutaArchivo, datosModificados);
-
-                CharactersGenerated++;
-                PbProgress.Value = i;
-            }
-
-            MessageBox.Show($"Se generaron {CharactersGenerated} copias del personaje.", "Operación completada", MessageBoxButton.OK, MessageBoxImage.Information);
-            Close();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error al duplicar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private static (string baseId, int numeroId) ExtraerBaseId(string idCompleto)
-    {
-        int length = idCompleto.Length;
-        int index = length - 1;
-
-        // Recorremos la cadena desde el final hacia el principio
-        while (index >= 0 && char.IsDigit(idCompleto[index]))
-        {
-            index--;
+            MessageBox.Show("Por favor, introduzca un número válido de copias.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
         }
 
-        // index + 1 es el inicio de la parte numérica
-        string baseId = idCompleto.Substring(0, index + 1);
-        string numeroStr = idCompleto.Substring(index + 1);
-
-        // Convertimos la parte numérica a entero
-        if (int.TryParse(numeroStr, out int numeroId))
+        string? outputFolderPath;
+        if (RbSameFolder.IsChecked == true)
         {
-            return (baseId, numeroId);
+            outputFolderPath = Path.GetDirectoryName(_originalCharacter.FilePath);
         }
         else
         {
-            throw new ArgumentException("El formato de la cadena no es válido.");
+            var dialog = new OpenFolderDialog
+            {
+                Title = "Selecciona la carpeta de destino para las copias",
+                InitialDirectory = Path.GetDirectoryName(_originalCharacter.FilePath) ?? string.Empty
+            };
+
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            outputFolderPath = dialog.FolderName;
+        }
+
+        if (string.IsNullOrWhiteSpace(outputFolderPath) || !Directory.Exists(outputFolderPath))
+        {
+            MessageBox.Show("La carpeta de destino no es válida o no existe.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        _isDuplicating = true;
+        _cancellationTokenSource = new CancellationTokenSource();
+
+        TxtCopies.IsEnabled = false;
+        RbSameFolder.IsEnabled = false;
+        RbCustomFolder.IsEnabled = false;
+        BtnDuplicate.IsEnabled = false;
+        BtnCancel.Content = "DETENER";
+
+        PbProgress.Minimum = 0;
+        PbProgress.Maximum = copies;
+        PbProgress.Value = 0;
+        TxtProgressStatus.Visibility = Visibility.Visible;
+        TxtProgressStatus.Text = $"Iniciando duplicación (0/{copies})...";
+
+        var progress = new Progress<int>(current =>
+        {
+            PbProgress.Value = current;
+            TxtProgressStatus.Text = $"Generando copia {current} de {copies}...";
+        });
+
+        try
+        {
+            CharactersGenerated = await _duplicationService.DuplicateCharacterAsync(
+                _originalCharacter,
+                outputFolderPath,
+                copies,
+                progress,
+                _cancellationTokenSource.Token);
+
+            MessageBox.Show(
+                $"Se generaron {CharactersGenerated} copias del personaje.",
+                "Operación completada",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            Close();
+        }
+        catch (OperationCanceledException)
+        {
+            MessageBox.Show(
+                $"Operación cancelada. Se generaron {CharactersGenerated} de {copies} copias.",
+                "Cancelado",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Error al duplicar: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            _isDuplicating = false;
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+
+            TxtCopies.IsEnabled = true;
+            RbSameFolder.IsEnabled = true;
+            RbCustomFolder.IsEnabled = true;
+            BtnDuplicate.IsEnabled = true;
+            BtnCancel.IsEnabled = true;
+            BtnCancel.Content = "CANCELAR";
         }
     }
 
-    private static byte[] ReemplazarIdEnDatos(byte[] datos, string idAntiguo, string idNuevo)
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        string datosHex = BitConverter.ToString(datos).Replace("-", "").ToLower();
-        string idAntiguoHex = ConvertirBytesAHex(Encoding.UTF8.GetBytes(idAntiguo));
-        string idNuevoHex = ConvertirBytesAHex(Encoding.UTF8.GetBytes(idNuevo));
-
-        string datosHexModificados = datosHex.Replace(idAntiguoHex, idNuevoHex);
-
-        return ConvertirHexAByteArray(datosHexModificados);
-    }
-
-    private static string ConvertirBytesAHex(byte[] bytes)
-    {
-        StringBuilder sb = new StringBuilder(bytes.Length * 2);
-        foreach (byte b in bytes)
-            sb.AppendFormat("{0:x2}", b);
-        return sb.ToString();
-    }
-
-    private static byte[] ConvertirHexAByteArray(string hex)
-    {
-        int longitud = hex.Length;
-        byte[] datos = new byte[longitud / 2];
-
-        for (int i = 0; i < longitud; i += 2)
-            datos[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
-
-        return datos;
+        if (_isDuplicating)
+        {
+            _cancellationTokenSource?.Cancel();
+        }
+        base.OnClosing(e);
     }
 }

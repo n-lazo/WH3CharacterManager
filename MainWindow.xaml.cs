@@ -1,126 +1,157 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using MessageBox = System.Windows.MessageBox;
-using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
+using System.Windows.Input;
+using Microsoft.Win32;
+using WH3CharacterManager.Models;
+using WH3CharacterManager.Services;
 
 namespace WH3CharacterManager;
 
-public partial class MainWindow
+public partial class MainWindow : Window
 {
-    private string characterFolderPath;
-    private ObservableCollection<CharacterFile> characterFiles;
+    private readonly ICharacterScannerService _scannerService;
+    private readonly ObservableCollection<CharacterFile> _characterFiles;
+    private bool _isScanning;
 
-    public MainWindow()
+    public MainWindow(ICharacterScannerService? scannerService = null)
     {
         InitializeComponent();
-        characterFiles = new ObservableCollection<CharacterFile>();
-        LvCharacters.ItemsSource = characterFiles;
-            
+        _scannerService = scannerService ?? new CharacterScannerService();
+        _characterFiles = new ObservableCollection<CharacterFile>();
+        LvCharacters.ItemsSource = _characterFiles;
+
         // Intentar obtener la ruta por defecto de los personajes de Warhammer 3
         string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        characterFolderPath = Path.Combine(appDataPath, "The Creative Assembly", "Warhammer3", "saved_characters");
-        TxtFolderPath.Text = characterFolderPath;
+        string defaultPath = Path.Combine(appDataPath, "The Creative Assembly", "Warhammer3", "saved_characters");
+        TxtFolderPath.Text = defaultPath;
     }
 
-    private void BtnScanFolder_Click(object sender, RoutedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        if (Directory.Exists(TxtFolderPath.Text.Trim()))
+        {
+            await ScanFolderAsync();
+        }
+    }
+
+    private async void BtnScanFolder_Click(object sender, RoutedEventArgs e)
+    {
+        await ScanFolderAsync();
+    }
+
+    private async Task ScanFolderAsync()
+    {
+        if (_isScanning)
+            return;
+
+        string folderPath = TxtFolderPath.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+        {
+            MessageBox.Show($"La carpeta '{folderPath}' no existe.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
         try
         {
-            characterFolderPath = TxtFolderPath.Text;
+            SetScanningState(true);
+            StatusText.Text = "Escaneando personajes...";
 
-            if (!Directory.Exists(characterFolderPath))
+            IReadOnlyList<CharacterFile> characters = await _scannerService.ScanDirectoryAsync(folderPath);
+
+            _characterFiles.Clear();
+            foreach (CharacterFile charFile in characters)
             {
-                MessageBox.Show($"La carpeta {characterFolderPath} no existe.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                _characterFiles.Add(charFile);
             }
 
-            characterFiles.Clear();
-            string[] files = Directory.GetFiles(characterFolderPath, "*.twc");
-                
-            foreach (string filePath in files)
-            {
-                byte[] fileContent = File.ReadAllBytes(filePath);
-                string fileName = Path.GetFileNameWithoutExtension(filePath);
-                    
-                characterFiles.Add(new CharacterFile
-                {
-                    FilePath = filePath,
-                    FileName = fileName,
-                    FileContent = fileContent
-                });
-            }
-
-            StatusText.Text = $"Se encontraron {characterFiles.Count} personajes.";
+            StatusText.Text = $"Se encontraron {_characterFiles.Count} personajes.";
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Error al escanear la carpeta: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "Error al escanear la carpeta.";
         }
+        finally
+        {
+            SetScanningState(false);
+        }
+    }
+
+    private void SetScanningState(bool scanning)
+    {
+        _isScanning = scanning;
+        BtnScanFolder.IsEnabled = !scanning;
+        BtnBrowseFolder.IsEnabled = !scanning;
+        BtnDuplicateCharacter.IsEnabled = !scanning;
+        BtnExportCharacter.IsEnabled = !scanning;
     }
 
     private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new System.Windows.Forms.FolderBrowserDialog();
-        dialog.Description = "Selecciona la carpeta de personajes guardados de Warhammer 3";
-        dialog.ShowNewFolderButton = false;
-            
-        if (Directory.Exists(TxtFolderPath.Text))
+        var dialog = new OpenFolderDialog
         {
-            dialog.SelectedPath = TxtFolderPath.Text;
-        }
-            
-        var result = dialog.ShowDialog();
-            
-        if (result == System.Windows.Forms.DialogResult.OK)
+            Title = "Selecciona la carpeta de personajes guardados de Warhammer 3",
+            InitialDirectory = Directory.Exists(TxtFolderPath.Text.Trim()) ? TxtFolderPath.Text.Trim() : string.Empty
+        };
+
+        if (dialog.ShowDialog(this) == true)
         {
-            TxtFolderPath.Text = dialog.SelectedPath;
+            TxtFolderPath.Text = dialog.FolderName;
         }
     }
 
-    private void BtnDuplicateCharacter_Click(object sender, RoutedEventArgs e)
+    private async void BtnDuplicateCharacter_Click(object sender, RoutedEventArgs e)
     {
-        if (LvCharacters.SelectedItem == null)
+        if (LvCharacters.SelectedItem is not CharacterFile selectedCharacter)
         {
             MessageBox.Show("Por favor, selecciona un personaje para duplicar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
-        CharacterFile selectedCharacter = (CharacterFile)LvCharacters.SelectedItem;
-            
-        DuplicateWindow duplicateWindow = new DuplicateWindow(selectedCharacter);
-        duplicateWindow.Owner = this;
+        var duplicateWindow = new DuplicateWindow(selectedCharacter)
+        {
+            Owner = this
+        };
+
         duplicateWindow.ShowDialog();
 
-        // Refrescar la lista después de posibles cambios
+        // Refrescar la lista si se generaron nuevos personajes
         if (duplicateWindow.CharactersGenerated > 0)
         {
-            BtnScanFolder_Click(sender, e);
+            await ScanFolderAsync();
+        }
+    }
+
+    private void LvCharacters_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (LvCharacters.SelectedItem is CharacterFile)
+        {
+            BtnDuplicateCharacter_Click(sender, e);
         }
     }
 
     private void BtnExportCharacter_Click(object sender, RoutedEventArgs e)
     {
-        if (LvCharacters.SelectedItem == null)
+        if (LvCharacters.SelectedItem is not CharacterFile selectedCharacter)
         {
             MessageBox.Show("Por favor, selecciona un personaje para exportar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
-        CharacterFile selectedCharacter = (CharacterFile)LvCharacters.SelectedItem;
-            
-        SaveFileDialog saveDialog = new SaveFileDialog
+        var saveDialog = new SaveFileDialog
         {
             FileName = selectedCharacter.FileName + ".twc",
             Filter = "Warhammer Character Files (*.twc)|*.twc",
             Title = "Exportar personaje"
         };
 
-        if (saveDialog.ShowDialog() == true)
+        if (saveDialog.ShowDialog(this) == true)
         {
             try
             {
-                File.Copy(selectedCharacter.FilePath, saveDialog.FileName, true);
+                File.Copy(selectedCharacter.FilePath, saveDialog.FileName, overwrite: true);
                 MessageBox.Show("Personaje exportado correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -129,11 +160,4 @@ public partial class MainWindow
             }
         }
     }
-}
-
-public class CharacterFile
-{
-    public string FilePath { get; set; }
-    public string FileName { get; set; }
-    public byte[] FileContent { get; set; }
 }

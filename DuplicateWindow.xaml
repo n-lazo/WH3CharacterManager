@@ -1,4 +1,4 @@
-﻿<Window x:Class="WH3CharacterManager.DuplicateWindow"
+<Window x:Class="WH3CharacterManager.DuplicateWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Duplicar Personaje" Height="449" Width="450"
@@ -66,8 +66,12 @@
             </GroupBox>
             
             <!-- Barra de progreso -->
-            <ProgressBar x:Name="PbProgress" Grid.Row="5" Height="25" Margin="0,15,0,0" 
-                         Style="{StaticResource GamingProgressBarStyle}"/>
+            <StackPanel Grid.Row="5" Margin="0,15,0,0">
+                <TextBlock x:Name="TxtProgressStatus" Text="" HorizontalAlignment="Center" Margin="0,0,0,5"
+                           Foreground="{StaticResource LightBlueBrush}" FontWeight="SemiBold" Visibility="Collapsed"/>
+                <ProgressBar x:Name="PbProgress" Height="25" 
+                             Style="{StaticResource GamingProgressBarStyle}"/>
+            </StackPanel>
             
             <!-- Botones -->
             <Grid Grid.Row="6" Margin="0,15,0,0">
