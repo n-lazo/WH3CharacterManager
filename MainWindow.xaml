@@ -374,9 +374,11 @@
                         <!-- Estado con personaje seleccionado -->
                         <StackPanel x:Name="CardSelectedInfo" Visibility="Collapsed">
                             <!-- Nombre -->
-                            <TextBlock Text="Nombre:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
-                            <TextBlock x:Name="TxtSelectedName" Text="HawkShisho" FontSize="15" FontWeight="Bold" 
-                                       Foreground="{StaticResource CyanNeonBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <TextBlock Text="Nombre de campaña:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                            <TextBlock x:Name="TxtSelectedName" Text="Magno Frochlichmann" FontSize="16" FontWeight="Bold" 
+                                       Foreground="{StaticResource CyanNeonBrush}" TextWrapping="Wrap" Margin="0,0,0,2"/>
+                            <TextBlock x:Name="TxtSelectedSavedTag" Text="Etiqueta: HawkShisho" FontSize="11" 
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"/>
 
                             <!-- Clase y Rol -->
                             <Grid Margin="0,0,0,8">

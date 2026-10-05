@@ -175,6 +175,8 @@ public partial class MainWindow : Window
             return true;
 
         return character.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+               character.LoreNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+               character.SavedNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
                character.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
                character.HeroClassDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
                character.RaceDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
@@ -218,6 +220,17 @@ public partial class MainWindow : Window
             BtnExportCharacter.IsEnabled = true;
 
             TxtSelectedName.Text = selected.DisplayName;
+
+            if (!string.IsNullOrWhiteSpace(selected.Metadata?.SavedName))
+            {
+                TxtSelectedSavedTag.Text = $"Etiqueta de guardado: {selected.Metadata.SavedName}";
+                TxtSelectedSavedTag.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                TxtSelectedSavedTag.Visibility = Visibility.Collapsed;
+            }
+
             TxtSelectedClass.Text = selected.HeroClassDisplay;
             TxtSelectedRace.Text = selected.RaceDisplay;
             TxtSelectedLevel.Text = selected.LevelDisplay;

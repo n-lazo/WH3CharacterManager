@@ -82,10 +82,12 @@ public static class TwcMetadataParser
         { "gate_master", "Gate Master (Maestro de la Puerta)" }
     };
 
-    public static CharacterMetadata Parse(ReadOnlySpan<byte> bytes)
+    public static CharacterMetadata Parse(ReadOnlySpan<byte> bytes, IGameNameResolverService? nameResolver = null)
     {
         string savedName = ExtractSavedName(bytes);
         var tokens = ExtractTokens(bytes);
+
+        string loreName = (nameResolver ?? GameNameResolverService.Instance).ResolveLoreName(bytes);
 
         string rawSubtype = FindSubtypeKey(tokens);
         string cultureCode = ExtractCultureCode(rawSubtype);
@@ -100,6 +102,7 @@ public static class TwcMetadataParser
 
         return new CharacterMetadata
         {
+            LoreName = loreName,
             SavedName = savedName,
             HeroClass = friendlyClass,
             Race = friendlyCulture,

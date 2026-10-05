@@ -2,6 +2,7 @@ namespace WH3CharacterManager.Models;
 
 public class CharacterMetadata
 {
+    public string LoreName { get; init; } = string.Empty;
     public string SavedName { get; init; } = string.Empty;
     public string HeroClass { get; init; } = "Desconocido";
     public string Race { get; init; } = "Desconocido";
@@ -21,10 +22,20 @@ public class CharacterFile
     public DateTime LastModified { get; init; }
     public CharacterMetadata? Metadata { get; set; }
 
-    public string DisplayName => !string.IsNullOrWhiteSpace(Metadata?.SavedName)
-        ? Metadata.SavedName
-        : FileName;
+    public string DisplayName
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Metadata?.LoreName))
+                return Metadata.LoreName;
+            if (!string.IsNullOrWhiteSpace(Metadata?.SavedName))
+                return Metadata.SavedName;
+            return FileName;
+        }
+    }
 
+    public string LoreNameDisplay => !string.IsNullOrWhiteSpace(Metadata?.LoreName) ? Metadata.LoreName : "-";
+    public string SavedNameDisplay => !string.IsNullOrWhiteSpace(Metadata?.SavedName) ? Metadata.SavedName : "-";
     public string HeroClassDisplay => Metadata?.HeroClass ?? "Héroe / Comandante";
     public string RaceDisplay => Metadata?.Race ?? "Desconocido";
     public string LevelDisplay => Metadata != null ? $"Nv. {Metadata.Level}" : "-";
