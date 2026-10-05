@@ -61,4 +61,24 @@ public class CharacterScannerServiceTests : IDisposable
 
         Assert.Empty(results);
     }
+
+    [Fact]
+    public async Task ScanDirectoryAsync_RealSavedCharacters_ParsesJorgeNitales()
+    {
+        string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"The Creative Assembly\Warhammer3\saved_characters");
+        if (!Directory.Exists(dir)) return;
+
+        var scanner = new CharacterScannerService();
+        var results = await scanner.ScanDirectoryAsync(dir);
+
+        var jorge = results.FirstOrDefault(r => r.FileName.StartsWith("2dff"));
+        if (jorge != null)
+        {
+            Assert.Equal("Jorge Nitales", jorge.DisplayName);
+            Assert.Equal("Jorge Nitales", jorge.Metadata?.CustomName);
+            Assert.Equal("HawkShisho", jorge.Metadata?.SavedName);
+            Assert.Equal("Wight King (Rey Tumulario)", jorge.HeroClassDisplay);
+            Assert.Equal("Condes Vampiro", jorge.RaceDisplay);
+        }
+    }
 }

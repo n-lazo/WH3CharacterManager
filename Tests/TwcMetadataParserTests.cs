@@ -81,4 +81,62 @@ public class TwcMetadataParserTests
         // Level is 1 + skills.Count = 1 + 2 = 3
         Assert.Equal(3, metadata.Level);
     }
+
+    [Fact]
+    public void Parse_WithCustomForenameAndSurname_ExtractsCustomNameAndSavedTag()
+    {
+        using var ms = new MemoryStream();
+        byte[] marker = Encoding.ASCII.GetBytes("SAVED_INITIATIVE_SET_INFO");
+        ms.Write(marker);
+        ms.Write(new byte[] { 0x04, 0x00, 0x00, 0x00 }); // field header
+
+        // Surname: Nitales
+        string surname = "Nitales";
+        byte[] len1 = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(len1, surname.Length);
+        ms.Write(len1);
+        ms.Write(Encoding.Unicode.GetBytes(surname));
+
+        ms.Write(new byte[] { 0x02, 0x00, 0x00, 0x00 }); // field header
+
+        // Forename: Jorge
+        string forename = "Jorge";
+        byte[] len2 = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(len2, forename.Length);
+        ms.Write(len2);
+        ms.Write(Encoding.Unicode.GetBytes(forename));
+
+        ms.Write(new byte[] { 0x01, 0x00, 0x00, 0x00 }); // field header
+
+        // Save tag: HawkShisho
+        string tag = "HawkShisho";
+        byte[] len3 = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(len3, tag.Length);
+        ms.Write(len3);
+        ms.Write(Encoding.Unicode.GetBytes(tag));
+
+        var metadata = TwcMetadataParser.Parse(ms.ToArray());
+        Assert.Equal("Jorge Nitales", metadata.CustomName);
+        Assert.Equal("HawkShisho", metadata.SavedName);
+
+        var charFile = new Models.CharacterFile
+        {
+            FilePath = "dummy.twc",
+            FileName = "dummy",
+            Metadata = metadata
+        };
+        Assert.Equal("Jorge Nitales", charFile.DisplayName);
+    }
+
+    [Fact]
+    public void Parse_WithVampireCountsWightKing_ResolvesCorrectClassAndRace()
+    {
+        string content = "something wh_main_vmp_wight_king and_skills";
+        byte[] bytes = Encoding.ASCII.GetBytes(content);
+
+        var metadata = TwcMetadataParser.Parse(bytes);
+
+        Assert.Equal("Wight King (Rey Tumulario)", metadata.HeroClass);
+        Assert.Equal("Condes Vampiro", metadata.Race);
+    }
 }

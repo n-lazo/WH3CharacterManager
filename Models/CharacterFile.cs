@@ -2,6 +2,7 @@ namespace WH3CharacterManager.Models;
 
 public class CharacterMetadata
 {
+    public string CustomName { get; init; } = string.Empty;
     public string LoreName { get; init; } = string.Empty;
     public string SavedName { get; init; } = string.Empty;
     public string HeroClass { get; init; } = "Desconocido";
@@ -30,6 +31,8 @@ public class CharacterFile
     {
         get
         {
+            if (!string.IsNullOrWhiteSpace(Metadata?.CustomName))
+                return Metadata.CustomName;
             if (!string.IsNullOrWhiteSpace(Metadata?.LoreName))
                 return Metadata.LoreName;
             if (!string.IsNullOrWhiteSpace(Metadata?.SavedName))
@@ -38,6 +41,7 @@ public class CharacterFile
         }
     }
 
+    public string CustomNameDisplay => !string.IsNullOrWhiteSpace(Metadata?.CustomName) ? Metadata.CustomName : "-";
     public string LoreNameDisplay => !string.IsNullOrWhiteSpace(Metadata?.LoreName) ? Metadata.LoreName : "-";
     public string SavedNameDisplay => !string.IsNullOrWhiteSpace(Metadata?.SavedName) ? Metadata.SavedName : "-";
     public string HeroClassDisplay => Metadata?.HeroClass ?? "Héroe / Comandante";

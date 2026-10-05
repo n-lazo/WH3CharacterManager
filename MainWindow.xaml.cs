@@ -282,6 +282,7 @@ public partial class MainWindow : Window
             return true;
 
         return character.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+               character.CustomNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
                character.LoreNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
                character.SavedNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
                character.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||

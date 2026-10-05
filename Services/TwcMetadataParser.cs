@@ -79,12 +79,20 @@ public static class TwcMetadataParser
         { "frost_maiden", "Frost Maiden (Doncella de Hielo)" },
         { "alchemist", "Alchemist (Alquimista)" },
         { "astromancer", "Astromancer (Astromante)" },
-        { "gate_master", "Gate Master (Maestro de la Puerta)" }
+        { "gate_master", "Gate Master (Maestro de la Puerta)" },
+
+        { "wight_king", "Wight King (Rey Tumulario)" },
+        { "vampire", "Vampire (Vampiresa)" },
+        { "necromancer", "Necromancer (Nigromante)" },
+        { "banshee", "Banshee" },
+        { "vampire_lord", "Vampire Lord (Señor de los Vampiros)" },
+        { "strigoi_ghoul_king", "Strigoi Ghoul King (Rey Necrófago Strigoi)" },
+        { "master_necromancer", "Master Necromancer (Gran Nigromante)" }
     };
 
     public static CharacterMetadata Parse(ReadOnlySpan<byte> bytes, IGameNameResolverService? nameResolver = null)
     {
-        string savedName = ExtractSavedName(bytes);
+        var (customName, savedTag) = ExtractInitiativeNames(bytes);
         var tokens = ExtractTokens(bytes);
 
         string loreName = (nameResolver ?? GameNameResolverService.Instance).ResolveLoreName(bytes);
@@ -104,8 +112,9 @@ public static class TwcMetadataParser
 
         return new CharacterMetadata
         {
+            CustomName = customName,
             LoreName = loreName,
-            SavedName = savedName,
+            SavedName = savedTag,
             HeroClass = friendlyClass,
             Race = friendlyCulture,
             Role = agentRole,
@@ -135,16 +144,15 @@ public static class TwcMetadataParser
         return string.Empty;
     }
 
-    private static string ExtractSavedName(ReadOnlySpan<byte> bytes)
+    private static (string CustomName, string SavedTag) ExtractInitiativeNames(ReadOnlySpan<byte> bytes)
     {
-        // El nombre personalizado está guardado como UTF-16 LE con prefijo de longitud Int32
-        // después de la sección del esquema SAVED_INITIATIVE_SET_INFO
         byte[] marker = "SAVED_INITIATIVE_SET_INFO"u8.ToArray();
         int markerIdx = bytes.IndexOf(marker);
-        if (markerIdx < 0) return string.Empty;
+        if (markerIdx < 0) return (string.Empty, string.Empty);
 
         int searchStart = markerIdx + marker.Length;
-        int searchEnd = Math.Min(bytes.Length - 4, searchStart + 40);
+        int searchEnd = Math.Min(bytes.Length - 4, searchStart + 120);
+        var strings = new List<string>();
 
         for (int i = searchStart; i < searchEnd; i++)
         {
@@ -166,12 +174,32 @@ public static class TwcMetadataParser
 
                 if (isUtf16)
                 {
-                    return Encoding.Unicode.GetString(slice);
+                    strings.Add(Encoding.Unicode.GetString(slice));
+                    i += 3 + charLen * 2;
                 }
             }
         }
 
-        return string.Empty;
+        if (strings.Count == 0)
+            return (string.Empty, string.Empty);
+
+        string savedTag = strings[^1];
+        string customName = string.Empty;
+
+        if (strings.Count >= 3)
+        {
+            // Formato de héroe con nombre y apellido personalizados: [0]=Apellido (Nitales), [1]=Nombre (Jorge), [2]=Tag (HawkShisho)
+            string surname = strings[0];
+            string forename = strings[1];
+            customName = $"{forename} {surname}".Trim();
+        }
+        else if (strings.Count == 2)
+        {
+            // Un solo nombre personalizado: [0]=Nombre (ej: Legolas), [1]=Tag (HawkShisho)
+            customName = strings[0].Trim();
+        }
+
+        return (customName, savedTag);
     }
 
     private static List<string> ExtractTokens(ReadOnlySpan<byte> bytes)
@@ -188,11 +216,28 @@ public static class TwcMetadataParser
 
     private static string FindSubtypeKey(List<string> tokens)
     {
-        // Buscar patrón típico de subtipos de héroes / lores:
-        // ej: wh2_twa02_wef_glade_captain, wh_dlc05_wef_waystalker, wh3_dlc25_emp_engineer
+        // 1. Priorizar si coincide con algún subtipo conocido de la base de datos
         foreach (string t in tokens)
         {
             if (t.Contains("_art_set_") || t.Contains("skill") || t.Contains("dummy") || t.Contains("cha_"))
+                continue;
+
+            foreach (var kvp in SubtypeFriendlyNames)
+            {
+                if (t.EndsWith(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
+                    t.Contains("_" + kvp.Key + "_", StringComparison.OrdinalIgnoreCase))
+                {
+                    return t;
+                }
+            }
+        }
+
+        // 2. Buscar patrón típico de subtipos de héroes / lores:
+        // ej: wh2_twa02_wef_glade_captain, wh_dlc05_wef_waystalker, wh3_dlc25_emp_engineer
+        foreach (string t in tokens)
+        {
+            if (t.Contains("_art_set_") || t.Contains("skill") || t.Contains("dummy") || t.Contains("cha_") ||
+                t.Contains("_host_") || t.Contains("_rebel") || t.Contains("_clan") || t.Contains("_tribe"))
                 continue;
 
             var match = Regex.Match(t, @"^wh\d*_[a-z0-9]+_([a-z]{3})_([a-z0-9_]+)$");
@@ -202,7 +247,7 @@ public static class TwcMetadataParser
             }
         }
 
-        // Búsqueda secundaria si no hubo coincidencia exacta
+        // 3. Búsqueda secundaria si no hubo coincidencia exacta
         foreach (string t in tokens)
         {
             if (t.Contains("_cha_") && !t.Contains("skill") && !t.Contains("art_set"))
