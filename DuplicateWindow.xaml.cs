@@ -210,6 +210,7 @@ public partial class DuplicateWindow : Window
         PbProgress.Minimum = 0;
         PbProgress.Maximum = copies;
         PbProgress.Value = 0;
+        PbProgress.Visibility = Visibility.Visible;
         TxtProgressStatus.Visibility = Visibility.Visible;
         TxtProgressStatus.Text = $"Iniciando duplicación (0/{copies})...";
 
@@ -278,6 +279,8 @@ public partial class DuplicateWindow : Window
             BtnDuplicate.IsEnabled = true;
             BtnCancel.IsEnabled = true;
             BtnCancel.Content = "CANCELAR";
+            TxtProgressStatus.Visibility = Visibility.Collapsed;
+            PbProgress.Visibility = Visibility.Collapsed;
         }
     }
 
