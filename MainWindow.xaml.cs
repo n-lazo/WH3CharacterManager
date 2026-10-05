@@ -14,7 +14,11 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<CharacterFile> _characterFiles;
     private bool _isScanning;
 
-    public MainWindow(ICharacterScannerService? scannerService = null)
+    public MainWindow() : this(null)
+    {
+    }
+
+    public MainWindow(ICharacterScannerService? scannerService)
     {
         InitializeComponent();
         _scannerService = scannerService ?? new CharacterScannerService();
