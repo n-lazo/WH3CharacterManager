@@ -97,6 +97,145 @@ public static class CharacterBinaryModifier
 
         return newBuffer;
     }
+
+    public static byte[] ReplaceUtf16StringNearMarker(
+        ReadOnlySpan<byte> source,
+        string marker,
+        string oldString,
+        string newString,
+        int searchWindowBytes = 256)
+    {
+        if (string.IsNullOrEmpty(oldString) || string.IsNullOrEmpty(newString) || oldString == newString)
+            return source.ToArray();
+
+        byte[] markerBytes = Encoding.UTF8.GetBytes(marker);
+        int markerIdx = source.IndexOf(markerBytes);
+        if (markerIdx < 0)
+            return source.ToArray();
+
+        int windowStart = markerIdx + markerBytes.Length;
+        int windowEnd = Math.Min(source.Length, windowStart + searchWindowBytes);
+
+        byte[] oldUnicodeBytes = Encoding.Unicode.GetBytes(oldString);
+        byte[] oldLenPrefix = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(oldLenPrefix, oldString.Length);
+
+        byte[] targetPattern = [.. oldLenPrefix, .. oldUnicodeBytes];
+
+        int patternIdx = -1;
+        for (int i = windowStart; i <= windowEnd - targetPattern.Length; i++)
+        {
+            if (source.Slice(i, targetPattern.Length).SequenceEqual(targetPattern))
+            {
+                patternIdx = i;
+                break;
+            }
+        }
+
+        if (patternIdx < 0)
+        {
+            for (int i = windowStart; i <= windowEnd - oldUnicodeBytes.Length; i++)
+            {
+                if (source.Slice(i, oldUnicodeBytes.Length).SequenceEqual(oldUnicodeBytes))
+                {
+                    patternIdx = i;
+                    if (i >= 4)
+                    {
+                        int prefix = BinaryPrimitives.ReadInt32LittleEndian(source.Slice(i - 4, 4));
+                        if (prefix == oldString.Length)
+                        {
+                            patternIdx = i - 4;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (patternIdx < 0)
+            return source.ToArray();
+
+        bool hasLengthPrefix = false;
+        int prefixLen = BinaryPrimitives.ReadInt32LittleEndian(source.Slice(patternIdx, 4));
+        if (prefixLen == oldString.Length && (patternIdx + 4 + oldUnicodeBytes.Length) <= source.Length &&
+            source.Slice(patternIdx + 4, oldUnicodeBytes.Length).SequenceEqual(oldUnicodeBytes))
+        {
+            hasLengthPrefix = true;
+        }
+
+        byte[] newUnicodeBytes = Encoding.Unicode.GetBytes(newString);
+        int oldBlockLen = (hasLengthPrefix ? 4 : 0) + oldUnicodeBytes.Length;
+        int newBlockLen = (hasLengthPrefix ? 4 : 0) + newUnicodeBytes.Length;
+        int sizeDiff = newBlockLen - oldBlockLen;
+
+        byte[] result = new byte[source.Length + sizeDiff];
+
+        source[..patternIdx].CopyTo(result);
+
+        int writePos = patternIdx;
+        if (hasLengthPrefix)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(result.AsSpan(writePos, 4), newString.Length);
+            writePos += 4;
+        }
+
+        newUnicodeBytes.CopyTo(result.AsSpan(writePos, newUnicodeBytes.Length));
+        writePos += newUnicodeBytes.Length;
+
+        source[(patternIdx + oldBlockLen)..].CopyTo(result.AsSpan(writePos));
+
+        return result;
+    }
+
+    public static byte[] UpdateCharacterNamesInBytes(
+        ReadOnlySpan<byte> source,
+        CharacterMetadata originalMetadata,
+        string? newForename,
+        string? newSurname,
+        string? newSavedTag)
+    {
+        byte[] current = source.ToArray();
+        const string marker = "SAVED_INITIATIVE_SET_INFO";
+
+        if (!string.IsNullOrWhiteSpace(newForename))
+        {
+            string oldForename = string.Empty;
+            if (!string.IsNullOrWhiteSpace(originalMetadata.CustomName))
+            {
+                var parts = originalMetadata.CustomName.Split(' ', 2);
+                oldForename = parts[0];
+            }
+
+            if (!string.IsNullOrEmpty(oldForename) && oldForename != newForename)
+            {
+                current = ReplaceUtf16StringNearMarker(current, marker, oldForename, newForename);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(newSurname))
+        {
+            string oldSurname = string.Empty;
+            if (!string.IsNullOrWhiteSpace(originalMetadata.CustomName))
+            {
+                var parts = originalMetadata.CustomName.Split(' ', 2);
+                if (parts.Length > 1)
+                    oldSurname = parts[1];
+            }
+
+            if (!string.IsNullOrEmpty(oldSurname) && oldSurname != newSurname)
+            {
+                current = ReplaceUtf16StringNearMarker(current, marker, oldSurname, newSurname);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(newSavedTag) && !string.IsNullOrWhiteSpace(originalMetadata.SavedName) && originalMetadata.SavedName != newSavedTag)
+        {
+            current = ReplaceUtf16StringNearMarker(current, marker, originalMetadata.SavedName, newSavedTag);
+        }
+
+        return current;
+    }
 }
 
 public interface ICharacterDuplicationService
@@ -106,7 +245,9 @@ public interface ICharacterDuplicationService
         string targetDirectory,
         int copies,
         IProgress<int>? progress = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? namePattern = null,
+        string? tagPattern = null);
 }
 
 public class CharacterDuplicationService : ICharacterDuplicationService
@@ -116,7 +257,9 @@ public class CharacterDuplicationService : ICharacterDuplicationService
         string targetDirectory,
         int copies,
         IProgress<int>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? namePattern = null,
+        string? tagPattern = null)
     {
         ArgumentNullException.ThrowIfNull(character);
         ArgumentException.ThrowIfNullOrWhiteSpace(targetDirectory);
@@ -138,6 +281,17 @@ public class CharacterDuplicationService : ICharacterDuplicationService
         CharacterIdInfo idInfo = CharacterIdParser.Parse(character.FileName);
         byte[] originalBytes = await File.ReadAllBytesAsync(character.FilePath, cancellationToken);
 
+        string baseForename = string.Empty;
+        string baseSurname = string.Empty;
+        if (!string.IsNullOrWhiteSpace(character.Metadata?.CustomName))
+        {
+            var parts = character.Metadata.CustomName.Split(' ', 2);
+            baseForename = parts[0];
+            if (parts.Length > 1) baseSurname = parts[1];
+        }
+
+        string baseTag = character.Metadata?.SavedName ?? string.Empty;
+
         int generatedCount = 0;
 
         for (int i = 1; i <= copies; i++)
@@ -146,6 +300,31 @@ public class CharacterDuplicationService : ICharacterDuplicationService
 
             string newId = idInfo.GenerateId(i);
             byte[] modifiedBytes = CharacterBinaryModifier.ReplaceIdInBytes(originalBytes, character.FileName, newId);
+
+            if (character.Metadata != null)
+            {
+                string? copyForename = null;
+                if (!string.IsNullOrWhiteSpace(namePattern) && !string.IsNullOrWhiteSpace(baseForename))
+                {
+                    copyForename = namePattern.Replace("{name}", baseForename).Replace("{n}", i.ToString());
+                }
+
+                string? copyTag = null;
+                if (!string.IsNullOrWhiteSpace(tagPattern) && !string.IsNullOrWhiteSpace(baseTag))
+                {
+                    copyTag = tagPattern.Replace("{tag}", baseTag).Replace("{n}", i.ToString());
+                }
+
+                if (!string.IsNullOrWhiteSpace(copyForename) || !string.IsNullOrWhiteSpace(copyTag))
+                {
+                    modifiedBytes = CharacterBinaryModifier.UpdateCharacterNamesInBytes(
+                        modifiedBytes,
+                        character.Metadata,
+                        copyForename,
+                        baseSurname,
+                        copyTag);
+                }
+            }
 
             string targetFilePath = Path.Combine(targetDirectory, $"{newId}.twc");
             await File.WriteAllBytesAsync(targetFilePath, modifiedBytes, cancellationToken);

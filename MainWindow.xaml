@@ -28,6 +28,11 @@
                     <Path Data="{StaticResource IconCopyGeometry}" Fill="{StaticResource CyanNeonBrush}" Width="14" Height="14" Stretch="Uniform"/>
                 </MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Editar personaje... (Ctrl+E)" Click="CtxEdit_Click" Style="{StaticResource ModernMenuItemStyle}">
+                <MenuItem.Icon>
+                    <Path Data="{StaticResource IconEditGeometry}" Fill="{StaticResource CyanNeonBrush}" Width="14" Height="14" Stretch="Uniform"/>
+                </MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="Exportar copia (.twc)..." Click="CtxExport_Click" Style="{StaticResource ModernMenuItemStyle}">
                 <MenuItem.Icon>
                     <Path Data="{StaticResource IconExportGeometry}" Fill="{StaticResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform"/>
@@ -159,15 +164,16 @@
                 </Grid>
             </Border>
 
-            <!-- 2. BARRA DE CARPETA, BÚSQUEDA Y MODO DE VISTA -->
+            <!-- 2. BARRA DE CARPETA, BÚSQUEDA, FILTROS Y ORDENAMIENTO -->
             <Border Grid.Row="1" Margin="0,0,0,14" Padding="14" 
                     Background="{StaticResource SurfaceCardBrush}" 
                     BorderBrush="{StaticResource BorderSubtleBrush}" 
                     BorderThickness="1" CornerRadius="8">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/> <!-- Fila 0: Selector de Carpeta -->
+                        <RowDefinition Height="Auto"/> <!-- Fila 1: Búsqueda, Rol, Orden y Switcher -->
+                        <RowDefinition Height="Auto"/> <!-- Fila 2: Chips de Razas con Escudos -->
                     </Grid.RowDefinitions>
 
                     <!-- Selector de Carpeta -->
@@ -206,23 +212,25 @@
                         </Button>
                     </Grid>
 
-                    <!-- Barra de Búsqueda y Switcher de Vista -->
+                    <!-- Barra de Búsqueda, Filtros de Rol, Orden y Switcher de Vista -->
                     <Grid Grid.Row="1" Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/> <!-- BUSCAR: label -->
+                            <ColumnDefinition Width="*"/>    <!-- Search Box -->
+                            <ColumnDefinition Width="Auto"/> <!-- Rol ComboBox -->
+                            <ColumnDefinition Width="Auto"/> <!-- Orden Selector -->
+                            <ColumnDefinition Width="Auto"/> <!-- Botón Dirección Orden -->
+                            <ColumnDefinition Width="Auto"/> <!-- Switcher de Modo de Vista -->
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="FILTRAR:" VerticalAlignment="Center" 
+                        <TextBlock Grid.Column="0" Text="BUSCAR:" VerticalAlignment="Center" 
                                    FontWeight="Bold" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,10,0"/>
 
                         <Grid Grid.Column="1" Margin="0,0,10,0">
                             <TextBox x:Name="TxtSearchFilter" Style="{StaticResource ModernTextBoxStyle}" 
                                      TextChanged="TxtSearchFilter_TextChanged"/>
                             <!-- Placeholder cuando está vacío -->
-                            <TextBlock Text="Buscar por nombre, clase, raza o rasgo (ej. Glade Captain, Elfos, Kurnous)..." 
+                            <TextBlock Text="Buscar por nombre, clase, rasgo o archivo..." 
                                        Foreground="{StaticResource TextMutedBrush}" FontSize="12"
                                        VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False">
                                 <TextBlock.Style>
@@ -246,11 +254,41 @@
                             </Button>
                         </Grid>
 
-                        <TextBlock x:Name="TxtFilterStatus" Grid.Column="2" VerticalAlignment="Center" 
-                                   Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,0,14,0"/>
+                        <!-- Filtro por Rol (Todos / Lords / Héroes) -->
+                        <ComboBox x:Name="CbRoleFilter" Grid.Column="2" Style="{StaticResource ModernComboBoxStyle}" 
+                                  Width="130" Margin="0,0,10,0" SelectionChanged="CbRoleFilter_SelectionChanged"
+                                  ToolTip="Filtrar personajes por tipo de rol">
+                            <ComboBoxItem Content="Todos los roles" IsSelected="True"/>
+                            <ComboBoxItem Content="Solo Lords"/>
+                            <ComboBoxItem Content="Solo Héroes"/>
+                        </ComboBox>
+
+                        <!-- Selector de Ordenamiento -->
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,4,0">
+                            <TextBlock Text="ORDEN:" VerticalAlignment="Center" FontWeight="Bold" FontSize="11" 
+                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,6,0"/>
+                            <ComboBox x:Name="CbSortSelector" Style="{StaticResource ModernComboBoxStyle}" 
+                                      Width="125" SelectionChanged="CbSortSelector_SelectionChanged"
+                                      ToolTip="Ordenar personajes por columna">
+                                <ComboBoxItem Content="Nombre" Tag="DisplayName" IsSelected="True"/>
+                                <ComboBoxItem Content="Nivel" Tag="Level"/>
+                                <ComboBoxItem Content="Raza" Tag="RaceDisplay"/>
+                                <ComboBoxItem Content="Clase" Tag="HeroClassDisplay"/>
+                                <ComboBoxItem Content="Modificado" Tag="LastModified"/>
+                                <ComboBoxItem Content="Tamaño" Tag="FileSizeBytes"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Botón Dirección de Orden (Asc/Desc) -->
+                        <Button x:Name="BtnSortDirection" Grid.Column="4" Style="{StaticResource SecondaryButtonStyle}" 
+                                Padding="8,6" Margin="0,0,10,0" Click="BtnSortDirection_Click" 
+                                ToolTip="Alternar dirección: Ascendente / Descendente">
+                            <Path x:Name="SortDirectionIcon" Data="{StaticResource IconSortAscGeometry}" 
+                                  Fill="{StaticResource CyanNeonBrush}" Width="14" Height="14" Stretch="Uniform"/>
+                        </Button>
 
                         <!-- Switcher de Modo de Vista [ Tabla | Galería ] -->
-                        <Border Grid.Column="3" Background="#0C131F" BorderBrush="{StaticResource BorderSubtleBrush}" 
+                        <Border Grid.Column="5" Background="#0C131F" BorderBrush="{StaticResource BorderSubtleBrush}" 
                                 BorderThickness="1" CornerRadius="6" Padding="3">
                             <StackPanel Orientation="Horizontal">
                                 <RadioButton x:Name="RbViewTable" Style="{StaticResource ViewToggleButtonStyle}" 
@@ -272,6 +310,135 @@
                             </StackPanel>
                         </Border>
                     </Grid>
+
+                    <!-- Fila 2: Chips Horizontales de Filtro por Raza con Escudos Oficiales -->
+                    <Border Grid.Row="2" Margin="0,10,0,0" Padding="0,8,0,0" 
+                            BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,1,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                <Path Data="{StaticResource IconHeroGeometry}" Fill="{StaticResource CyanLightBrush}" 
+                                      Width="12" Height="12" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="RAZAS:" FontWeight="Bold" FontSize="11" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Chips deslizables horizontalmente -->
+                            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <ItemsControl x:Name="IcRaceFilterChips">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Click="RaceChip_Click" Margin="0,0,6,0" Cursor="Hand">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Background" Value="#0E1624"/>
+                                                        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
+                                                        <Setter Property="Padding" Value="8,4"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border x:Name="b" Background="{TemplateBinding Background}" 
+                                                                            BorderBrush="{TemplateBinding BorderBrush}" 
+                                                                            BorderThickness="{TemplateBinding BorderThickness}" 
+                                                                            CornerRadius="14" Padding="{TemplateBinding Padding}" 
+                                                                            SnapsToDevicePixels="True">
+                                                                        <ContentPresenter VerticalAlignment="Center"/>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource CyanLightBrush}"/>
+                                                                            <Setter TargetName="b" Property="Background" Value="#16253C"/>
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                <Setter Property="Background" Value="#122742"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource CyanNeonBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <!-- Icono de escudo de raza si existe -->
+                                                    <Image Source="{Binding IconPath}" Width="15" Height="15" Margin="0,0,6,0" 
+                                                           VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasIcon}" Value="False">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+
+                                                    <!-- Nombre de raza -->
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+
+                                                    <!-- Badge con conteo de personajes -->
+                                                    <Border Margin="6,0,0,0" CornerRadius="8" Padding="5,1" VerticalAlignment="Center">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="#172235"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                        <Setter Property="Background" Value="#00D2FF"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Text="{Binding Count}" FontSize="9.5" FontWeight="Bold">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="{StaticResource CyanLightBrush}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                            <Setter Property="Foreground" Value="#0A0D14"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <!-- Indicador de filtro / conteo -->
+                            <TextBlock x:Name="TxtFilterStatus" Grid.Column="2" VerticalAlignment="Center" 
+                                       Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" FontSize="11.5" Margin="10,0,0,0"/>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
 
@@ -288,7 +455,8 @@
                     <ListView x:Name="LvCharacters" 
                               Style="{StaticResource ModernListViewStyle}"
                               SelectionChanged="LvCharacters_SelectionChanged"
-                              MouseDoubleClick="LvCharacters_MouseDoubleClick">
+                              MouseDoubleClick="LvCharacters_MouseDoubleClick"
+                              GridViewColumnHeader.Click="GridViewColumnHeader_Click">
                         <ListView.Resources>
                             <Style TargetType="GridViewColumnHeader">
                                 <Setter Property="Background" Value="#0E131D"/>
@@ -298,6 +466,8 @@
                                 <Setter Property="Padding" Value="12,8"/>
                                 <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
                                 <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="ToolTip" Value="Clic para ordenar por esta columna"/>
                             </Style>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="Background" Value="Transparent"/>
@@ -335,7 +505,7 @@
                         <ListView.View>
                             <GridView>
                                 <!-- Columna: Personaje -->
-                                <GridViewColumn Header="PERSONAJE" Width="210">
+                                <GridViewColumn x:Name="ColHeaderPersonaje" Header="PERSONAJE" Width="210">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -361,7 +531,7 @@
                                 </GridViewColumn>
 
                                 <!-- Columna: Clase -->
-                                <GridViewColumn Header="CLASE / HÉROE" Width="175">
+                                <GridViewColumn x:Name="ColHeaderClase" Header="CLASE / HÉROE" Width="175">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding HeroClassDisplay}" FontSize="12" FontWeight="SemiBold" 
@@ -371,7 +541,7 @@
                                 </GridViewColumn>
 
                                 <!-- Columna: Raza -->
-                                <GridViewColumn Header="RAZA" Width="125">
+                                <GridViewColumn x:Name="ColHeaderRaza" Header="RAZA" Width="125">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Background="#141D2D" BorderBrush="{StaticResource BorderSubtleBrush}" 
@@ -388,7 +558,7 @@
                                 </GridViewColumn>
 
                                 <!-- Columna: Nivel -->
-                                <GridViewColumn Header="NIVEL" Width="65">
+                                <GridViewColumn x:Name="ColHeaderNivel" Header="NIVEL" Width="65">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Background="#14261C" BorderBrush="#059669" 
@@ -401,7 +571,7 @@
                                 </GridViewColumn>
 
                                 <!-- Columna: Rasgo -->
-                                <GridViewColumn Header="RASGO INNATO" Width="135">
+                                <GridViewColumn x:Name="ColHeaderRasgo" Header="RASGO INNATO" Width="135">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding TraitDisplay}" FontSize="11" 
@@ -411,7 +581,7 @@
                                 </GridViewColumn>
 
                                 <!-- Columna: Tamaño -->
-                                <GridViewColumn Header="TAMAÑO" Width="70">
+                                <GridViewColumn x:Name="ColHeaderTamano" Header="TAMAÑO" Width="70">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding FormattedFileSize}" FontSize="11" 
@@ -421,7 +591,7 @@
                                 </GridViewColumn>
 
                                 <!-- Columna: Modificado -->
-                                <GridViewColumn Header="MODIFICADO" Width="120">
+                                <GridViewColumn x:Name="ColHeaderModificado" Header="MODIFICADO" Width="120">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding FormattedLastModified}" FontSize="11" 
@@ -591,12 +761,23 @@
 
                             <!-- Botón Duplicar -->
                             <Button x:Name="BtnDuplicateCharacter" Style="{StaticResource PrimaryButtonStyle}" 
-                                    Height="44" Margin="0,0,0,10" Click="BtnDuplicateCharacter_Click"
+                                    Height="44" Margin="0,0,0,8" Click="BtnDuplicateCharacter_Click"
                                     IsEnabled="False">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="{StaticResource IconCopyGeometry}" Fill="White" 
                                           Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
                                     <TextBlock Text="DUPLICAR..." FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Botón Editar -->
+                            <Button x:Name="BtnEditCharacter" Style="{StaticResource SecondaryButtonStyle}" 
+                                    Height="38" Margin="0,0,0,8" Click="BtnEditCharacter_Click"
+                                    IsEnabled="False" ToolTip="Editar nombres y etiqueta guardada (Ctrl+E)">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource IconEditGeometry}" Fill="{StaticResource CyanNeonBrush}" 
+                                          Width="14" Height="14" Stretch="Uniform" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Editar personaje..."/>
                                 </StackPanel>
                             </Button>
 
@@ -760,7 +941,7 @@
                                    Foreground="{StaticResource TextSecondaryBrush}"/>
                     </StackPanel>
 
-                    <TextBlock Grid.Column="1" Text="WH3 Character Manager • .NET 9" FontSize="11" 
+                    <TextBlock Grid.Column="1" Text="WH3 Character Manager • .NET 10" FontSize="11" 
                                Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>

@@ -46,6 +46,7 @@ public class CharacterFile
     public string SavedNameDisplay => !string.IsNullOrWhiteSpace(Metadata?.SavedName) ? Metadata.SavedName : "-";
     public string HeroClassDisplay => Metadata?.HeroClass ?? "Héroe / Comandante";
     public string RaceDisplay => Metadata?.Race ?? "Desconocido";
+    public int Level => Metadata?.Level ?? 1;
     public string LevelDisplay => Metadata != null ? $"Nv. {Metadata.Level}" : "-";
     public string TraitDisplay => Metadata?.Trait ?? "-";
     public string RoleDisplay => Metadata?.Role ?? "Héroe";

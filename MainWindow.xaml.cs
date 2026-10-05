@@ -19,9 +19,17 @@ public partial class MainWindow : Window
 {
     private readonly ICharacterScannerService _scannerService;
     private readonly ObservableCollection<CharacterFile> _characterFiles;
+    private readonly ObservableCollection<RaceFilterItem> _raceFilters;
+    public ObservableCollection<RaceFilterItem> RaceFilters => _raceFilters;
     private ICollectionView? _charactersView;
     private bool _isScanning;
     private string _searchText = string.Empty;
+    private string _selectedRaceFilter = "ALL";
+    private enum RoleFilterMode { All, LordsOnly, HeroesOnly }
+    private RoleFilterMode _selectedRoleFilter = RoleFilterMode.All;
+    private string _currentSortProperty = "DisplayName";
+    private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
+    private bool _isSyncingSort;
     private bool _isSyncingSelection;
     private DispatcherTimer? _toastTimer;
 
@@ -34,9 +42,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         _scannerService = scannerService ?? new CharacterScannerService();
         _characterFiles = new ObservableCollection<CharacterFile>();
+        _raceFilters = new ObservableCollection<RaceFilterItem>();
         
         LvCharacters.ItemsSource = _characterFiles;
         LbGallery.ItemsSource = _characterFiles;
+        IcRaceFilterChips.ItemsSource = _raceFilters;
 
         _charactersView = CollectionViewSource.GetDefaultView(_characterFiles);
         _charactersView.Filter = FilterCharacter;
@@ -102,6 +112,14 @@ public partial class MainWindow : Window
         {
             TxtSearchFilter.Text = string.Empty;
             e.Handled = true;
+        }
+        else if (e.Key == Key.E && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            if (GetSelectedCharacter() != null)
+            {
+                BtnEditCharacter_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
         }
         else if (e.Key == Key.Delete && !TxtSearchFilter.IsFocused && !TxtFolderPath.IsFocused)
         {
@@ -186,6 +204,8 @@ public partial class MainWindow : Window
                 _characterFiles.Add(charFile);
             }
 
+            UpdateRaceChips();
+            ApplySort(_currentSortProperty, _currentSortDirection);
             ApplyFilter();
             UpdateCounters();
             UpdateEmptyState();
@@ -214,6 +234,7 @@ public partial class MainWindow : Window
         BtnBrowseFolder.IsEnabled = !scanning;
         bool hasSelection = GetSelectedCharacter() != null;
         BtnDuplicateCharacter.IsEnabled = !scanning && hasSelection;
+        BtnEditCharacter.IsEnabled = !scanning && hasSelection;
         BtnExportCharacter.IsEnabled = !scanning && hasSelection;
         BtnDeleteCharacter.IsEnabled = !scanning && hasSelection;
     }
@@ -259,7 +280,7 @@ public partial class MainWindow : Window
 
     #endregion
 
-    #region Filtering
+    #region Filtering & Sorting
 
     private void TxtSearchFilter_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -273,22 +294,61 @@ public partial class MainWindow : Window
         TxtSearchFilter.Text = string.Empty;
     }
 
+    private void CbRoleFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CbRoleFilter == null) return;
+        _selectedRoleFilter = CbRoleFilter.SelectedIndex switch
+        {
+            1 => RoleFilterMode.LordsOnly,
+            2 => RoleFilterMode.HeroesOnly,
+            _ => RoleFilterMode.All
+        };
+        ApplyFilter();
+    }
+
     private bool FilterCharacter(object item)
     {
         if (item is not CharacterFile character)
             return false;
 
-        if (string.IsNullOrWhiteSpace(_searchText))
-            return true;
+        // 1. Filtro por texto de búsqueda
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            bool matches = character.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                           character.CustomNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                           character.LoreNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                           character.SavedNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                           character.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                           character.HeroClassDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                           character.RaceDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                           character.TraitDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
 
-        return character.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               character.CustomNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               character.LoreNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               character.SavedNameDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               character.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               character.HeroClassDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               character.RaceDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               character.TraitDisplay.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+            if (!matches)
+                return false;
+        }
+
+        // 2. Filtro por Raza (Crests Chips)
+        if (!string.IsNullOrEmpty(_selectedRaceFilter) && _selectedRaceFilter != "ALL")
+        {
+            if (!string.Equals(character.RaceDisplay, _selectedRaceFilter, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        // 3. Filtro por Rol (Lords vs Héroes)
+        if (_selectedRoleFilter == RoleFilterMode.LordsOnly)
+        {
+            if (!character.RoleDisplay.Contains("Lord", StringComparison.OrdinalIgnoreCase) &&
+                !character.RoleDisplay.Contains("Comandante", StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+        else if (_selectedRoleFilter == RoleFilterMode.HeroesOnly)
+        {
+            if (character.RoleDisplay.Contains("Lord", StringComparison.OrdinalIgnoreCase) ||
+                character.RoleDisplay.Contains("Comandante", StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
     }
 
     private void ApplyFilter()
@@ -303,7 +363,11 @@ public partial class MainWindow : Window
         int total = _characterFiles.Count;
         TxtCharacterCountBadge.Text = $"{total} {(total == 1 ? "Personaje" : "Personajes")}";
 
-        if (_charactersView != null && !string.IsNullOrWhiteSpace(_searchText))
+        bool hasFilter = !string.IsNullOrWhiteSpace(_searchText) ||
+                         (!string.IsNullOrEmpty(_selectedRaceFilter) && _selectedRaceFilter != "ALL") ||
+                         _selectedRoleFilter != RoleFilterMode.All;
+
+        if (_charactersView != null && hasFilter)
         {
             int filtered = _charactersView.Cast<object>().Count();
             TxtFilterStatus.Text = $"{filtered} de {total}";
@@ -318,6 +382,198 @@ public partial class MainWindow : Window
     {
         bool hasVisibleItems = _charactersView != null && _charactersView.Cast<object>().Any();
         EmptyStateOverlay.Visibility = hasVisibleItems ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void UpdateRaceChips()
+    {
+        string previousSelected = _selectedRaceFilter;
+        _raceFilters.Clear();
+
+        int total = _characterFiles.Count;
+        var allChip = new RaceFilterItem
+        {
+            RaceKey = "ALL",
+            DisplayName = "Todas las razas",
+            IconPath = null,
+            Count = total,
+            IsSelected = string.IsNullOrEmpty(previousSelected) || previousSelected == "ALL"
+        };
+        _raceFilters.Add(allChip);
+
+        var groups = _characterFiles
+            .GroupBy(c => c.RaceDisplay)
+            .OrderBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase);
+
+        bool foundSelected = allChip.IsSelected;
+
+        foreach (var group in groups)
+        {
+            string raceName = group.Key;
+            string? icon = group.FirstOrDefault(c => c.HasRaceIcon)?.RaceIconPath;
+            bool isSel = string.Equals(previousSelected, raceName, StringComparison.OrdinalIgnoreCase);
+            if (isSel) foundSelected = true;
+
+            _raceFilters.Add(new RaceFilterItem
+            {
+                RaceKey = raceName,
+                DisplayName = raceName,
+                IconPath = icon,
+                Count = group.Count(),
+                IsSelected = isSel
+            });
+        }
+
+        if (!foundSelected)
+        {
+            _selectedRaceFilter = "ALL";
+            allChip.IsSelected = true;
+        }
+    }
+
+    private void RaceChip_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is RaceFilterItem item)
+        {
+            SelectRaceFilter(item);
+        }
+    }
+
+    private void SelectRaceFilter(RaceFilterItem item)
+    {
+        if (item.RaceKey == "ALL" || (item.IsSelected && _selectedRaceFilter == item.RaceKey))
+        {
+            _selectedRaceFilter = "ALL";
+        }
+        else
+        {
+            _selectedRaceFilter = item.RaceKey;
+        }
+
+        foreach (var chip in _raceFilters)
+        {
+            chip.IsSelected = chip.RaceKey.Equals(_selectedRaceFilter, StringComparison.OrdinalIgnoreCase);
+        }
+
+        ApplyFilter();
+    }
+
+    private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
+    {
+        if (e.OriginalSource is GridViewColumnHeader header && header.Column != null)
+        {
+            string? prop = null;
+            if (header.Column == ColHeaderPersonaje) prop = "DisplayName";
+            else if (header.Column == ColHeaderClase) prop = "HeroClassDisplay";
+            else if (header.Column == ColHeaderRaza) prop = "RaceDisplay";
+            else if (header.Column == ColHeaderNivel) prop = "Level";
+            else if (header.Column == ColHeaderRasgo) prop = "TraitDisplay";
+            else if (header.Column == ColHeaderTamano) prop = "FileSizeBytes";
+            else if (header.Column == ColHeaderModificado) prop = "LastModified";
+
+            if (string.IsNullOrEmpty(prop))
+                return;
+
+            ListSortDirection newDir;
+            if (_currentSortProperty == prop)
+            {
+                newDir = _currentSortDirection == ListSortDirection.Ascending 
+                    ? ListSortDirection.Descending 
+                    : ListSortDirection.Ascending;
+            }
+            else
+            {
+                newDir = (prop is "Level" or "LastModified" or "FileSizeBytes")
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending;
+            }
+
+            ApplySort(prop, newDir);
+        }
+    }
+
+    private void CbSortSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isSyncingSort || CbSortSelector == null || CbSortSelector.SelectedItem is not ComboBoxItem selectedItem)
+            return;
+
+        string? prop = selectedItem.Tag as string;
+        if (!string.IsNullOrEmpty(prop))
+        {
+            ListSortDirection dir = _currentSortDirection;
+            if (prop != _currentSortProperty && (prop is "Level" or "LastModified" or "FileSizeBytes"))
+                dir = ListSortDirection.Descending;
+
+            ApplySort(prop, dir);
+        }
+    }
+
+    private void BtnSortDirection_Click(object sender, RoutedEventArgs e)
+    {
+        var newDir = _currentSortDirection == ListSortDirection.Ascending
+            ? ListSortDirection.Descending
+            : ListSortDirection.Ascending;
+        ApplySort(_currentSortProperty, newDir);
+    }
+
+    private void ApplySort(string propertyName, ListSortDirection direction)
+    {
+        _currentSortProperty = propertyName;
+        _currentSortDirection = direction;
+
+        if (_charactersView != null)
+        {
+            _charactersView.SortDescriptions.Clear();
+            _charactersView.SortDescriptions.Add(new SortDescription(propertyName, direction));
+            if (propertyName != "DisplayName")
+            {
+                _charactersView.SortDescriptions.Add(new SortDescription("DisplayName", ListSortDirection.Ascending));
+            }
+        }
+
+        if (SortDirectionIcon != null)
+        {
+            SortDirectionIcon.Data = (Geometry)FindResource(
+                direction == ListSortDirection.Ascending ? "IconSortAscGeometry" : "IconSortDescGeometry");
+            BtnSortDirection.ToolTip = direction == ListSortDirection.Ascending 
+                ? "Orden actual: Ascendente (Clic para Descendente)" 
+                : "Orden actual: Descendente (Clic para Ascendente)";
+        }
+
+        SyncSortComboBox(propertyName);
+        UpdateColumnHeaderIndicators(propertyName, direction);
+    }
+
+    private void SyncSortComboBox(string propertyName)
+    {
+        if (CbSortSelector == null) return;
+        _isSyncingSort = true;
+        try
+        {
+            foreach (var item in CbSortSelector.Items)
+            {
+                if (item is ComboBoxItem cbi && (string?)cbi.Tag == propertyName)
+                {
+                    CbSortSelector.SelectedItem = cbi;
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            _isSyncingSort = false;
+        }
+    }
+
+    private void UpdateColumnHeaderIndicators(string propertyName, ListSortDirection direction)
+    {
+        string arrow = direction == ListSortDirection.Ascending ? " ▲" : " ▼";
+        if (ColHeaderPersonaje != null) ColHeaderPersonaje.Header = "PERSONAJE" + (propertyName == "DisplayName" ? arrow : "");
+        if (ColHeaderClase != null) ColHeaderClase.Header = "CLASE / HÉROE" + (propertyName == "HeroClassDisplay" ? arrow : "");
+        if (ColHeaderRaza != null) ColHeaderRaza.Header = "RAZA" + (propertyName == "RaceDisplay" ? arrow : "");
+        if (ColHeaderNivel != null) ColHeaderNivel.Header = "NIVEL" + (propertyName == "Level" ? arrow : "");
+        if (ColHeaderRasgo != null) ColHeaderRasgo.Header = "RASGO INNATO" + (propertyName == "TraitDisplay" ? arrow : "");
+        if (ColHeaderTamano != null) ColHeaderTamano.Header = "TAMAÑO" + (propertyName == "FileSizeBytes" ? arrow : "");
+        if (ColHeaderModificado != null) ColHeaderModificado.Header = "MODIFICADO" + (propertyName == "LastModified" ? arrow : "");
     }
 
     #endregion
@@ -374,6 +630,7 @@ public partial class MainWindow : Window
         if (selected != null)
         {
             BtnDuplicateCharacter.IsEnabled = !_isScanning;
+            BtnEditCharacter.IsEnabled = !_isScanning;
             BtnExportCharacter.IsEnabled = !_isScanning;
             BtnDeleteCharacter.IsEnabled = !_isScanning;
 
@@ -450,6 +707,7 @@ public partial class MainWindow : Window
         else
         {
             BtnDuplicateCharacter.IsEnabled = false;
+            BtnEditCharacter.IsEnabled = false;
             BtnExportCharacter.IsEnabled = false;
             BtnDeleteCharacter.IsEnabled = false;
 
@@ -512,6 +770,38 @@ public partial class MainWindow : Window
         {
             await ScanFolderAsync();
             ShowToast($"✓ Se generaron {duplicateWindow.CharactersGenerated} copias exitosamente.");
+        }
+    }
+
+    private async void BtnEditCharacter_Click(object sender, RoutedEventArgs e)
+    {
+        CharacterFile? selectedCharacter = GetSelectedCharacter();
+        if (selectedCharacter == null)
+        {
+            MessageBox.Show("Por favor, selecciona un personaje para editar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var editWindow = new CharacterEditWindow(selectedCharacter)
+        {
+            Owner = this
+        };
+
+        if (editWindow.ShowDialog() == true)
+        {
+            string selectedFilePath = selectedCharacter.FilePath;
+            await ScanFolderAsync();
+
+            // Volver a seleccionar el personaje editado en la lista/galería
+            var updated = _characterFiles.FirstOrDefault(c => c.FilePath.Equals(selectedFilePath, StringComparison.OrdinalIgnoreCase));
+            if (updated != null)
+            {
+                LvCharacters.SelectedItem = updated;
+                LbGallery.SelectedItem = updated;
+                LvCharacters.ScrollIntoView(updated);
+            }
+
+            ShowToast($"✓ Personaje '{updated?.DisplayName ?? selectedCharacter.DisplayName}' actualizado correctamente.");
         }
     }
 
@@ -611,6 +901,11 @@ public partial class MainWindow : Window
     private void CtxDuplicate_Click(object sender, RoutedEventArgs e)
     {
         BtnDuplicateCharacter_Click(sender, e);
+    }
+
+    private void CtxEdit_Click(object sender, RoutedEventArgs e)
+    {
+        BtnEditCharacter_Click(sender, e);
     }
 
     private void CtxExport_Click(object sender, RoutedEventArgs e)

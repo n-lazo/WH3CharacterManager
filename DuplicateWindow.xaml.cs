@@ -74,6 +74,22 @@ public partial class DuplicateWindow : Window
         }
     }
 
+    private void ChkDifferentiateCopies_Changed(object sender, RoutedEventArgs e)
+    {
+        if (PanelNamingPatterns != null)
+        {
+            PanelNamingPatterns.Visibility = ChkDifferentiateCopies.IsChecked == true 
+                ? Visibility.Visible 
+                : Visibility.Collapsed;
+        }
+        UpdatePreview();
+    }
+
+    private void TxtPattern_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UpdatePreview();
+    }
+
     private void UpdatePreview()
     {
         if (TxtPreviewFirst == null || TxtPreviewLast == null)
@@ -89,6 +105,33 @@ public partial class DuplicateWindow : Window
 
                 TxtPreviewFirst.Text = first;
                 TxtPreviewLast.Text = last;
+
+                if (ChkDifferentiateCopies?.IsChecked == true)
+                {
+                    string namePattern = TxtNamePattern?.Text.Trim() ?? "{name} ({n})";
+                    string tagPattern = TxtTagPattern?.Text.Trim() ?? "{tag}_{n}";
+
+                    string baseName = _originalCharacter.DisplayName;
+                    string baseTag = _originalCharacter.Metadata?.SavedName ?? "Hero";
+
+                    string firstInGame = namePattern.Replace("{name}", baseName).Replace("{n}", "1");
+                    string lastInGame = namePattern.Replace("{name}", baseName).Replace("{n}", copies.ToString());
+
+                    string firstTag = tagPattern.Replace("{tag}", baseTag).Replace("{n}", "1");
+                    string lastTag = tagPattern.Replace("{tag}", baseTag).Replace("{n}", copies.ToString());
+
+                    if (TxtPreviewFirstName != null)
+                        TxtPreviewFirstName.Text = $"In-Game: \"{firstInGame}\" (Tag: {firstTag})";
+
+                    if (TxtPreviewLastName != null)
+                        TxtPreviewLastName.Text = $"In-Game: \"{lastInGame}\" (Tag: {lastTag})";
+                }
+                else
+                {
+                    if (TxtPreviewFirstName != null) TxtPreviewFirstName.Text = $"In-Game: \"{_originalCharacter.DisplayName}\"";
+                    if (TxtPreviewLastName != null) TxtPreviewLastName.Text = $"In-Game: \"{_originalCharacter.DisplayName}\"";
+                }
+
                 if (BtnDuplicate != null) BtnDuplicate.IsEnabled = true;
                 return;
             }
@@ -100,6 +143,8 @@ public partial class DuplicateWindow : Window
 
         TxtPreviewFirst.Text = "-";
         TxtPreviewLast.Text = "-";
+        if (TxtPreviewFirstName != null) TxtPreviewFirstName.Text = string.Empty;
+        if (TxtPreviewLastName != null) TxtPreviewLastName.Text = string.Empty;
         if (BtnDuplicate != null) BtnDuplicate.IsEnabled = false;
     }
 
@@ -175,6 +220,15 @@ public partial class DuplicateWindow : Window
             TxtProgressStatus.Text = $"Generando copia {current} de {copies}... ({percent}%)";
         });
 
+        string? namePattern = null;
+        string? tagPattern = null;
+
+        if (ChkDifferentiateCopies.IsChecked == true)
+        {
+            namePattern = string.IsNullOrWhiteSpace(TxtNamePattern.Text) ? "{name} ({n})" : TxtNamePattern.Text.Trim();
+            tagPattern = string.IsNullOrWhiteSpace(TxtTagPattern.Text) ? "{tag}_{n}" : TxtTagPattern.Text.Trim();
+        }
+
         try
         {
             CharactersGenerated = await _duplicationService.DuplicateCharacterAsync(
@@ -182,7 +236,9 @@ public partial class DuplicateWindow : Window
                 outputFolderPath,
                 copies,
                 progress,
-                _cancellationTokenSource.Token);
+                _cancellationTokenSource.Token,
+                namePattern,
+                tagPattern);
 
             MessageBox.Show(
                 $"Se generaron {CharactersGenerated} copias exitosamente del personaje.",

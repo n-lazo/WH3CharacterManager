@@ -1,7 +1,7 @@
 <Window x:Class="WH3CharacterManager.DuplicateWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Duplicar Personaje - Warhammer 3" Height="620" Width="520"
+        Title="Duplicar Personaje - Warhammer 3" Height="710" Width="530"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None"
         Background="{StaticResource AppBgBrush}"
@@ -50,6 +50,7 @@
                     <RowDefinition Height="Auto"/> <!-- Encabezado -->
                     <RowDefinition Height="Auto"/> <!-- Info Personaje -->
                     <RowDefinition Height="Auto"/> <!-- Número de copias -->
+                    <RowDefinition Height="Auto"/> <!-- Opciones de nombres personalizados -->
                     <RowDefinition Height="Auto"/> <!-- Vista previa -->
                     <RowDefinition Height="Auto"/> <!-- Carpeta destino -->
                     <RowDefinition Height="*"/>    <!-- Barra de progreso -->
@@ -57,7 +58,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- 1. Encabezado -->
-                <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
                     <TextBlock Text="GENERADOR DE COPIAS FUNCIONALES" FontWeight="Bold" FontSize="15" 
                                Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="Genera copias con identificadores únicos compatibles con Warhammer 3" 
@@ -65,7 +66,7 @@
                 </StackPanel>
 
                 <!-- 2. Información del personaje seleccionado con Retrato -->
-                <Border Grid.Row="1" Margin="0,0,0,14" Background="{StaticResource SurfaceInputBrush}" 
+                <Border Grid.Row="1" Margin="0,0,0,12" Background="{StaticResource SurfaceInputBrush}" 
                         BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -97,7 +98,7 @@
                 </Border>
 
                 <!-- 3. Opciones de duplicación y Stepper -->
-                <Border Grid.Row="2" Margin="0,0,0,14" Background="{StaticResource SurfaceInputBrush}" 
+                <Border Grid.Row="2" Margin="0,0,0,12" Background="{StaticResource SurfaceInputBrush}" 
                         BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
                     <StackPanel>
                         <TextBlock Text="NÚMERO DE COPIAS A GENERAR" FontSize="11" FontWeight="Bold" 
@@ -138,35 +139,81 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 4. Vista previa de IDs generados -->
-                <Border Grid.Row="3" Margin="0,0,0,14" Background="#0C1420" 
+                <!-- 4. Personalización Avanzada de Nombres -->
+                <Border Grid.Row="3" Margin="0,0,0,12" Background="{StaticResource SurfaceInputBrush}" 
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                    <StackPanel>
+                        <CheckBox x:Name="ChkDifferentiateCopies" IsChecked="True" 
+                                  Checked="ChkDifferentiateCopies_Changed" Unchecked="ChkDifferentiateCopies_Changed">
+                            <TextBlock Text="Diferenciar nombres de las copias (in-game)" FontWeight="Bold" FontSize="11" 
+                                       Foreground="{StaticResource TextPrimaryBrush}" Margin="6,0,0,0"/>
+                        </CheckBox>
+
+                        <StackPanel x:Name="PanelNamingPatterns" Margin="0,8,0,0">
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="135"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Patrón de nombre:" FontSize="11" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtNamePattern" Grid.Column="1" Text="{}{name} ({n})" 
+                                         Style="{StaticResource ModernTextBoxStyle}" TextChanged="TxtPattern_TextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="135"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Patrón de etiqueta:" FontSize="11" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtTagPattern" Grid.Column="1" Text="{}{tag}_{n}" 
+                                         Style="{StaticResource ModernTextBoxStyle}" TextChanged="TxtPattern_TextChanged"/>
+                            </Grid>
+                            <TextBlock Text="Variables: {name}=nombre base, {tag}=etiqueta base, {n}=número de copia." 
+                                       FontSize="9.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. Vista previa de IDs generados y Nombres -->
+                <Border Grid.Row="4" Margin="0,0,0,12" Background="#0C1420" 
                         BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
                     <StackPanel>
                         <TextBlock Text="VISTA PREVIA DE GENERACIÓN" FontSize="10" FontWeight="Bold" 
-                                   Foreground="{StaticResource TextMutedBrush}" Margin="0,0,6,0"/>
+                                   Foreground="{StaticResource TextMutedBrush}" Margin="0,0,6,4"/>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Primera copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="90"/>
-                            <TextBlock x:Name="TxtPreviewFirst" Grid.Column="1" Text="Calculando..." FontSize="11" 
-                                       Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="0" Text="Primera copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="95"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock x:Name="TxtPreviewFirst" Text="Calculando..." FontSize="11" 
+                                           Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="TxtPreviewFirstName" Text="" FontSize="10" 
+                                           Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
                         </Grid>
-                        <Grid Margin="0,2">
+                        <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Última copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="90"/>
-                            <TextBlock x:Name="TxtPreviewLast" Grid.Column="1" Text="Calculando..." FontSize="11" 
-                                       Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="0" Text="Última copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="95"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock x:Name="TxtPreviewLast" Text="Calculando..." FontSize="11" 
+                                           Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="TxtPreviewLastName" Text="" FontSize="10" 
+                                           Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
                         </Grid>
                     </StackPanel>
                 </Border>
 
-                <!-- 5. Opción de carpeta destino -->
-                <StackPanel Grid.Row="4" Margin="0,0,0,10">
+                <!-- 6. Opción de carpeta destino -->
+                <StackPanel Grid.Row="5" Margin="0,0,0,8">
                     <TextBlock Text="UBICACIÓN DE DESTINO" FontSize="11" FontWeight="Bold" 
                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                     <RadioButton x:Name="RbSameFolder" Content="Guardar en la misma carpeta original" 
@@ -175,15 +222,15 @@
                                  Style="{StaticResource ModernRadioButtonStyle}"/>
                 </StackPanel>
 
-                <!-- 6. Barra de progreso y estado -->
-                <StackPanel Grid.Row="5" VerticalAlignment="Center" Margin="0,4,0,10">
-                    <TextBlock x:Name="TxtProgressStatus" Text="" HorizontalAlignment="Center" Margin="0,0,0,6"
-                               Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" FontSize="12" Visibility="Collapsed"/>
+                <!-- 7. Barra de progreso y estado -->
+                <StackPanel Grid.Row="6" VerticalAlignment="Center" Margin="0,2,0,8">
+                    <TextBlock x:Name="TxtProgressStatus" Text="" HorizontalAlignment="Center" Margin="0,0,0,4"
+                               Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" FontSize="11.5" Visibility="Collapsed"/>
                     <ProgressBar x:Name="PbProgress" Style="{StaticResource ModernProgressBarStyle}"/>
                 </StackPanel>
 
-                <!-- 7. Botones de acción -->
-                <Grid Grid.Row="6" Margin="0,6,0,0">
+                <!-- 8. Botones de acción -->
+                <Grid Grid.Row="7" Margin="0,4,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>

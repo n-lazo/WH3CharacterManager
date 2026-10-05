@@ -72,4 +72,76 @@ public class CharacterBinaryModifierTests
 
         Assert.Equal(sample, result);
     }
+
+    [Fact]
+    public void ReplaceUtf16StringNearMarker_DifferentLength_UpdatesPrefixAndBuffer()
+    {
+        using var ms = new MemoryStream();
+        byte[] marker = Encoding.UTF8.GetBytes("SAVED_INITIATIVE_SET_INFO");
+        ms.Write(marker);
+        ms.Write([0x01, 0x02]); // padding
+
+        string oldStr = "HawkShisho";
+        byte[] prefix = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(prefix, oldStr.Length);
+        ms.Write(prefix);
+        ms.Write(Encoding.Unicode.GetBytes(oldStr));
+        ms.Write([0xFF, 0xEE]); // footer
+
+        byte[] original = ms.ToArray();
+        string newStr = "SuperHeroLegend";
+
+        byte[] modified = CharacterBinaryModifier.ReplaceUtf16StringNearMarker(
+            original, "SAVED_INITIATIVE_SET_INFO", oldStr, newStr);
+
+        var metadata = TwcMetadataParser.Parse(modified);
+        Assert.Equal("SuperHeroLegend", metadata.SavedName);
+    }
+
+    [Fact]
+    public void UpdateCharacterNamesInBytes_UpdatesForenameSurnameAndSavedTag()
+    {
+        using var ms = new MemoryStream();
+        byte[] marker = Encoding.UTF8.GetBytes("SAVED_INITIATIVE_SET_INFO");
+        ms.Write(marker);
+        ms.Write([0x04, 0x00, 0x00, 0x00]);
+
+        // Surname: Nitales
+        string surname = "Nitales";
+        byte[] len1 = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(len1, surname.Length);
+        ms.Write(len1);
+        ms.Write(Encoding.Unicode.GetBytes(surname));
+
+        ms.Write([0x02, 0x00, 0x00, 0x00]);
+
+        // Forename: Jorge
+        string forename = "Jorge";
+        byte[] len2 = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(len2, forename.Length);
+        ms.Write(len2);
+        ms.Write(Encoding.Unicode.GetBytes(forename));
+
+        ms.Write([0x01, 0x00, 0x00, 0x00]);
+
+        // Save tag: HawkShisho
+        string tag = "HawkShisho";
+        byte[] len3 = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(len3, tag.Length);
+        ms.Write(len3);
+        ms.Write(Encoding.Unicode.GetBytes(tag));
+
+        byte[] original = ms.ToArray();
+        var origMetadata = TwcMetadataParser.Parse(original);
+
+        Assert.Equal("Jorge Nitales", origMetadata.CustomName);
+        Assert.Equal("HawkShisho", origMetadata.SavedName);
+
+        byte[] updated = CharacterBinaryModifier.UpdateCharacterNamesInBytes(
+            original, origMetadata, "Carlos", "Santana", "MiTagNuevo");
+
+        var newMetadata = TwcMetadataParser.Parse(updated);
+        Assert.Equal("Carlos Santana", newMetadata.CustomName);
+        Assert.Equal("MiTagNuevo", newMetadata.SavedName);
+    }
 }

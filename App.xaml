@@ -80,6 +80,9 @@
             <Geometry x:Key="IconCheckGeometry">M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z</Geometry>
             <Geometry x:Key="IconInfoGeometry">M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z</Geometry>
             <Geometry x:Key="IconDeleteGeometry">M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z</Geometry>
+            <Geometry x:Key="IconEditGeometry">M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z</Geometry>
+            <Geometry x:Key="IconSortAscGeometry">M19 17h3l-4 4-4-4h3V3h2v14zM2 17h10v2H2v-2zm0-7h14v2H2v-2zm0-7h18v2H2V3z</Geometry>
+            <Geometry x:Key="IconSortDescGeometry">M19 7h3l-4-4-4 4h3v14h2V7zM2 17h10v2H2v-2zm0-7h14v2H2v-2zm0-7h18v2H2V3z</Geometry>
 
             <!-- Botón Principal Premium (Glow + Gradient) -->
             <Style x:Key="PrimaryButtonStyle" TargetType="Button">
@@ -523,6 +526,126 @@
                 <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
                 <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
                 <Setter Property="Padding" Value="2"/>
+            </Style>
+
+            <!-- ComboBox Moderno Gaming -->
+            <ControlTemplate x:Key="ModernComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
+                <Border x:Name="templateRoot" 
+                        Background="{TemplateBinding Background}" 
+                        BorderBrush="{TemplateBinding BorderBrush}" 
+                        BorderThickness="{TemplateBinding BorderThickness}" 
+                        CornerRadius="6" 
+                        SnapsToDevicePixels="true">
+                    <Border x:Name="splitBorder" Width="26" HorizontalAlignment="Right" Background="Transparent">
+                        <Path x:Name="arrow" 
+                              Data="M0 0 L4 4 L8 0 Z" 
+                              Fill="{StaticResource TextSecondaryBrush}" 
+                              HorizontalAlignment="Center" 
+                              VerticalAlignment="Center"/>
+                    </Border>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="true">
+                        <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource CyanNeonBrush}"/>
+                        <Setter TargetName="arrow" Property="Fill" Value="{StaticResource CyanNeonBrush}"/>
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="true">
+                        <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource CyanNeonBrush}"/>
+                        <Setter TargetName="arrow" Property="Fill" Value="{StaticResource CyanNeonBrush}"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+            <Style x:Key="ModernComboBoxItemStyle" TargetType="{x:Type ComboBoxItem}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Padding" Value="10,6"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                            <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                    Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True" CornerRadius="4">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#17263C"/>
+                                    <Setter Property="Foreground" Value="{StaticResource CyanNeonBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#10253F"/>
+                                    <Setter Property="Foreground" Value="{StaticResource CyanNeonBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ModernComboBoxStyle" TargetType="{x:Type ComboBox}">
+                <Setter Property="Background" Value="{StaticResource SurfaceInputBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="ItemContainerStyle" Value="{StaticResource ModernComboBoxItemStyle}"/>
+                <Setter Property="Padding" Value="10,6,28,6"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ComboBox}">
+                            <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                                <ToggleButton x:Name="toggleButton" 
+                                              Background="{TemplateBinding Background}" 
+                                              BorderBrush="{TemplateBinding BorderBrush}" 
+                                              BorderThickness="{TemplateBinding BorderThickness}" 
+                                              ClickMode="Press" 
+                                              Focusable="false" 
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                              Template="{StaticResource ModernComboBoxToggleButton}"/>
+                                <ContentPresenter x:Name="contentPresenter" 
+                                                  Content="{TemplateBinding SelectionBoxItem}" 
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
+                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" 
+                                                  ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" 
+                                                  HorizontalAlignment="Left" 
+                                                  IsHitTestVisible="false" 
+                                                  Margin="{TemplateBinding Padding}" 
+                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  VerticalAlignment="Center"/>
+                                <Popup x:Name="PART_Popup" 
+                                       AllowsTransparency="true" 
+                                       IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                       Placement="Bottom" 
+                                       PopupAnimation="Slide">
+                                    <Border x:Name="dropDownBorder" 
+                                            Background="{StaticResource SurfaceCardBrush}" 
+                                            BorderBrush="{StaticResource CyanNeonBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6" 
+                                            MinWidth="{Binding ActualWidth, ElementName=templateRoot}" 
+                                            MaxHeight="{TemplateBinding MaxDropDownHeight}" 
+                                            Margin="0,3,0,0" 
+                                            Padding="4">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="12" Color="#000000" Opacity="0.5" ShadowDepth="4"/>
+                                        </Border.Effect>
+                                        <ScrollViewer x:Name="DropDownScrollViewer" CanContentScroll="true">
+                                            <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="templateRoot" Property="Opacity" Value="0.4"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
         </ResourceDictionary>
     </Application.Resources>

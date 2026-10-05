@@ -91,4 +91,75 @@ public class CharacterDuplicationServiceTests : IDisposable
             await service.DuplicateCharacterAsync(charFile, _testDir, 10, cancellationToken: cts.Token);
         });
     }
+
+    [Fact]
+    public async Task DuplicateCharacterAsync_WithCustomNamingPatterns_GeneratesDistinctNamesInFiles()
+    {
+        string originalFileName = "Alith_01";
+        string sourceFilePath = Path.Combine(_testDir, originalFileName + ".twc");
+
+        using var ms = new MemoryStream();
+        ms.Write(Encoding.UTF8.GetBytes("HEAD_"));
+        ms.Write(Encoding.UTF8.GetBytes(originalFileName));
+        ms.Write(Encoding.UTF8.GetBytes("_SAVED_INITIATIVE_SET_INFO"));
+        ms.Write([0x01, 0x00, 0x00, 0x00]);
+
+        string surname = "Anar";
+        byte[] len1 = new byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(len1, surname.Length);
+        ms.Write(len1);
+        ms.Write(Encoding.Unicode.GetBytes(surname));
+
+        ms.Write([0x02, 0x00, 0x00, 0x00]);
+
+        string forename = "Alith";
+        byte[] len2 = new byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(len2, forename.Length);
+        ms.Write(len2);
+        ms.Write(Encoding.Unicode.GetBytes(forename));
+
+        ms.Write([0x03, 0x00, 0x00, 0x00]);
+
+        string tag = "ShadowKing";
+        byte[] len3 = new byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(len3, tag.Length);
+        ms.Write(len3);
+        ms.Write(Encoding.Unicode.GetBytes(tag));
+
+        byte[] raw = ms.ToArray();
+        await File.WriteAllBytesAsync(sourceFilePath, raw);
+
+        var metadata = TwcMetadataParser.Parse(raw);
+        var charFile = new CharacterFile
+        {
+            FileName = originalFileName,
+            FilePath = sourceFilePath,
+            FileSizeBytes = raw.Length,
+            LastModified = DateTime.UtcNow,
+            Metadata = metadata
+        };
+
+        var service = new CharacterDuplicationService();
+        int generated = await service.DuplicateCharacterAsync(
+            charFile, _testDir, 2, 
+            namePattern: "{name} [{n}]", 
+            tagPattern: "{tag}_{n}");
+
+        Assert.Equal(2, generated);
+
+        string copyPath1 = Path.Combine(_testDir, "Alith_02.twc");
+        string copyPath2 = Path.Combine(_testDir, "Alith_03.twc");
+
+        Assert.True(File.Exists(copyPath1));
+        Assert.True(File.Exists(copyPath2));
+
+        var copy1Meta = TwcMetadataParser.Parse(await File.ReadAllBytesAsync(copyPath1));
+        var copy2Meta = TwcMetadataParser.Parse(await File.ReadAllBytesAsync(copyPath2));
+
+        Assert.Equal("Alith [1] Anar", copy1Meta.CustomName);
+        Assert.Equal("ShadowKing_1", copy1Meta.SavedName);
+
+        Assert.Equal("Alith [2] Anar", copy2Meta.CustomName);
+        Assert.Equal("ShadowKing_2", copy2Meta.SavedName);
+    }
 }
