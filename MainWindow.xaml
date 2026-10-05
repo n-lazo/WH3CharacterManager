@@ -220,15 +220,19 @@
                     <ListView.View>
                         <GridView>
                             <!-- Columna: Nombre de Personaje con icono -->
-                            <GridViewColumn Header="PERSONAJE" Width="210">
+                            <GridViewColumn Header="PERSONAJE" Width="220">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Border Width="26" Height="26" CornerRadius="5" Background="#162234" 
+                                            <Border Width="30" Height="30" CornerRadius="6" Background="#162234" 
                                                     BorderBrush="{StaticResource CyanNeonBrush}" BorderThickness="0.8"
-                                                    Margin="0,0,8,0" VerticalAlignment="Center">
-                                                <Path Data="{StaticResource IconHeroGeometry}" Fill="{StaticResource CyanLightBrush}" 
-                                                      Width="13" Height="13" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    Margin="0,0,8,0" VerticalAlignment="Center" ClipToBounds="True">
+                                                <Grid>
+                                                    <Path Data="{StaticResource IconHeroGeometry}" Fill="{StaticResource CyanLightBrush}" 
+                                                          Width="13" Height="13" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <Image Source="{Binding PortraitImagePath}" Stretch="UniformToFill" 
+                                                           RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Grid>
                                             </Border>
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="13" 
@@ -252,13 +256,17 @@
                             </GridViewColumn>
 
                             <!-- Columna: Raza / Cultura -->
-                            <GridViewColumn Header="RAZA" Width="110">
+                            <GridViewColumn Header="RAZA" Width="125">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <Border Background="#141D2D" BorderBrush="{StaticResource BorderSubtleBrush}" 
-                                                BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding RaceDisplay}" FontSize="11" 
-                                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                BorderThickness="1" CornerRadius="4" Padding="5,2" HorizontalAlignment="Left">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Image Source="{Binding RaceIconPath}" Width="16" Height="16" Margin="0,0,5,0" 
+                                                       RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding RaceDisplay}" FontSize="11" 
+                                                           Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
                                         </Border>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
@@ -373,31 +381,41 @@
 
                         <!-- Estado con personaje seleccionado -->
                         <StackPanel x:Name="CardSelectedInfo" Visibility="Collapsed">
-                            <!-- Nombre -->
-                            <TextBlock Text="Nombre de campaña:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
-                            <TextBlock x:Name="TxtSelectedName" Text="Magno Frochlichmann" FontSize="16" FontWeight="Bold" 
-                                       Foreground="{StaticResource CyanNeonBrush}" TextWrapping="Wrap" Margin="0,0,0,2"/>
-                            <TextBlock x:Name="TxtSelectedSavedTag" Text="Etiqueta: HawkShisho" FontSize="11" 
-                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"/>
-
-                            <!-- Clase y Rol -->
-                            <Grid Margin="0,0,0,8">
+                            <!-- Retrato y Nombre Principal -->
+                            <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Clase:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
-                                    <TextBlock x:Name="TxtSelectedClass" Text="Glade Captain" FontSize="12" FontWeight="SemiBold" 
-                                               Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                                    <TextBlock Text="Nivel:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
-                                    <Border Background="#14261C" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="6,2">
+
+                                <!-- Marco del Retrato -->
+                                <Border Grid.Column="0" Width="64" Height="64" CornerRadius="8" 
+                                        Background="#121D2C" BorderBrush="{StaticResource CyanNeonBrush}" BorderThickness="1.2"
+                                        Margin="0,0,10,0" VerticalAlignment="Top" ClipToBounds="True">
+                                    <Grid>
+                                        <Path Data="{StaticResource IconHeroGeometry}" Fill="{StaticResource CyanLightBrush}" 
+                                              Width="26" Height="26" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Image x:Name="ImgSelectedPortrait" Stretch="UniformToFill" 
+                                               RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Nombre de campaña:" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                                    <TextBlock x:Name="TxtSelectedName" Text="Magno Frochlichmann" FontSize="15" FontWeight="Bold" 
+                                               Foreground="{StaticResource CyanNeonBrush}" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="TxtSelectedSavedTag" Text="Etiqueta: HawkShisho" FontSize="10.5" 
+                                               Foreground="{StaticResource TextMutedBrush}" Margin="0,1,0,4"/>
+                                    <Border Background="#14261C" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
                                         <TextBlock x:Name="TxtSelectedLevel" Text="Nv. 2" FontSize="11" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
+
+                            <!-- Clase -->
+                            <TextBlock Text="Clase:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                            <TextBlock x:Name="TxtSelectedClass" Text="Glade Captain" FontSize="12.5" FontWeight="SemiBold" 
+                                       Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
                             <!-- Raza y Rasgo -->
                             <Grid Margin="0,0,0,8">
@@ -406,14 +424,17 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                                    <TextBlock Text="Raza:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
-                                    <TextBlock x:Name="TxtSelectedRace" Text="Elfos Silvanos" FontSize="11.5" 
-                                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="Raza:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Image x:Name="ImgSelectedRace" Width="18" Height="18" Margin="0,0,5,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <TextBlock x:Name="TxtSelectedRace" Text="Elfos Silvanos" FontSize="11.5" 
+                                                   Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="4,0,0,0">
-                                    <TextBlock Text="Rasgo:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,1"/>
+                                    <TextBlock Text="Rasgo:" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
                                     <TextBlock x:Name="TxtSelectedTrait" Text="Weapon Master" FontSize="11.5" 
-                                               Foreground="{StaticResource CyanLightBrush}" TextTrimming="CharacterEllipsis"/>
+                                               Foreground="{StaticResource CyanLightBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
 

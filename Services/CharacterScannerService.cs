@@ -36,6 +36,11 @@ public class CharacterScannerService : ICharacterScannerService
                 {
                     byte[] fileBytes = File.ReadAllBytes(file.FullName);
                     metadata = TwcMetadataParser.Parse(fileBytes);
+                    if (metadata != null)
+                    {
+                        metadata.PortraitImagePath = GameAssetService.Instance.GetPortraitImagePath(metadata.PortholePath);
+                        metadata.RaceIconPath = GameAssetService.Instance.GetRaceIconPath(metadata.CultureCode);
+                    }
                 }
                 catch
                 {

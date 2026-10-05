@@ -100,6 +100,8 @@ public static class TwcMetadataParser
         var skills = ExtractActiveSkills(tokens);
         int level = Math.Max(1, 1 + skills.Count);
 
+        string portholePath = ExtractPortholePath(tokens, bytes);
+
         return new CharacterMetadata
         {
             LoreName = loreName,
@@ -111,8 +113,26 @@ public static class TwcMetadataParser
             Faction = faction,
             Level = level,
             Skills = skills,
-            SubtypeRaw = rawSubtype
+            SubtypeRaw = rawSubtype,
+            CultureCode = cultureCode,
+            PortholePath = portholePath
         };
+    }
+
+    private static string ExtractPortholePath(List<string> tokens, ReadOnlySpan<byte> bytes)
+    {
+        string ascii = Encoding.ASCII.GetString(bytes);
+        var match = Regex.Match(ascii, @"UI/Portraits/Portholes/[^\x00\s]+\.png", RegexOptions.IgnoreCase);
+        if (match.Success)
+            return match.Value;
+
+        foreach (string t in tokens)
+        {
+            if (t.Contains("portholes", StringComparison.OrdinalIgnoreCase) && t.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                return t;
+        }
+
+        return string.Empty;
     }
 
     private static string ExtractSavedName(ReadOnlySpan<byte> bytes)

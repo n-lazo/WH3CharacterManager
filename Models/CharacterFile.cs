@@ -12,6 +12,10 @@ public class CharacterMetadata
     public int Level { get; init; } = 1;
     public IReadOnlyList<string> Skills { get; init; } = Array.Empty<string>();
     public string SubtypeRaw { get; init; } = string.Empty;
+    public string CultureCode { get; init; } = string.Empty;
+    public string PortholePath { get; init; } = string.Empty;
+    public string? PortraitImagePath { get; set; }
+    public string? RaceIconPath { get; set; }
 }
 
 public class CharacterFile
@@ -41,6 +45,11 @@ public class CharacterFile
     public string LevelDisplay => Metadata != null ? $"Nv. {Metadata.Level}" : "-";
     public string TraitDisplay => Metadata?.Trait ?? "-";
     public string RoleDisplay => Metadata?.Role ?? "Héroe";
+
+    public string? PortraitImagePath => Metadata?.PortraitImagePath;
+    public string? RaceIconPath => Metadata?.RaceIconPath;
+    public bool HasPortraitImage => !string.IsNullOrEmpty(PortraitImagePath) && System.IO.File.Exists(PortraitImagePath);
+    public bool HasRaceIcon => !string.IsNullOrEmpty(RaceIconPath) && System.IO.File.Exists(RaceIconPath);
 
     public string FormattedFileSize => FormatBytes(FileSizeBytes);
     public string FormattedLastModified => LastModified.ToString("yyyy-MM-dd HH:mm");

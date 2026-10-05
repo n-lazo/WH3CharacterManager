@@ -231,6 +231,40 @@ public partial class MainWindow : Window
                 TxtSelectedSavedTag.Visibility = Visibility.Collapsed;
             }
 
+            if (selected.HasPortraitImage)
+            {
+                try
+                {
+                    ImgSelectedPortrait.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(selected.PortraitImagePath!));
+                    ImgSelectedPortrait.Visibility = Visibility.Visible;
+                }
+                catch
+                {
+                    ImgSelectedPortrait.Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                ImgSelectedPortrait.Visibility = Visibility.Collapsed;
+            }
+
+            if (selected.HasRaceIcon)
+            {
+                try
+                {
+                    ImgSelectedRace.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(selected.RaceIconPath!));
+                    ImgSelectedRace.Visibility = Visibility.Visible;
+                }
+                catch
+                {
+                    ImgSelectedRace.Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                ImgSelectedRace.Visibility = Visibility.Collapsed;
+            }
+
             TxtSelectedClass.Text = selected.HeroClassDisplay;
             TxtSelectedRace.Text = selected.RaceDisplay;
             TxtSelectedLevel.Text = selected.LevelDisplay;
