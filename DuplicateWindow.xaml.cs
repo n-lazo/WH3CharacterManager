@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 using WH3CharacterManager.Models;
 using WH3CharacterManager.Services;
@@ -20,7 +21,74 @@ public partial class DuplicateWindow : Window
         InitializeComponent();
         _originalCharacter = character ?? throw new ArgumentNullException(nameof(character));
         _duplicationService = duplicationService ?? new CharacterDuplicationService();
-        LblCharacterName.Content = character.FileName;
+        LblCharacterName.Text = character.FileName + ".twc";
+        UpdatePreview();
+    }
+
+    private void TxtCopies_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UpdatePreview();
+    }
+
+    private void BtnMinusCopies_Click(object sender, RoutedEventArgs e)
+    {
+        if (int.TryParse(TxtCopies.Text.Trim(), out int copies) && copies > 1)
+        {
+            TxtCopies.Text = (copies - 1).ToString();
+        }
+    }
+
+    private void BtnPlusCopies_Click(object sender, RoutedEventArgs e)
+    {
+        if (int.TryParse(TxtCopies.Text.Trim(), out int copies))
+        {
+            TxtCopies.Text = (copies + 1).ToString();
+        }
+        else
+        {
+            TxtCopies.Text = "1";
+        }
+    }
+
+    private void BtnPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Content is string text && text.StartsWith("+"))
+        {
+            if (int.TryParse(text[1..], out int add))
+            {
+                int current = int.TryParse(TxtCopies.Text.Trim(), out int val) ? val : 0;
+                TxtCopies.Text = Math.Max(1, current + add).ToString();
+            }
+        }
+    }
+
+    private void UpdatePreview()
+    {
+        if (TxtPreviewFirst == null || TxtPreviewLast == null)
+            return;
+
+        if (int.TryParse(TxtCopies.Text.Trim(), out int copies) && copies > 0)
+        {
+            try
+            {
+                CharacterIdInfo idInfo = CharacterIdParser.Parse(_originalCharacter.FileName);
+                string first = idInfo.GenerateId(1) + ".twc";
+                string last = idInfo.GenerateId(copies) + ".twc";
+
+                TxtPreviewFirst.Text = first;
+                TxtPreviewLast.Text = last;
+                if (BtnDuplicate != null) BtnDuplicate.IsEnabled = true;
+                return;
+            }
+            catch
+            {
+                // Ignorar error al parsear durante edición
+            }
+        }
+
+        TxtPreviewFirst.Text = "-";
+        TxtPreviewLast.Text = "-";
+        if (BtnDuplicate != null) BtnDuplicate.IsEnabled = false;
     }
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
@@ -75,6 +143,8 @@ public partial class DuplicateWindow : Window
         _cancellationTokenSource = new CancellationTokenSource();
 
         TxtCopies.IsEnabled = false;
+        BtnMinusCopies.IsEnabled = false;
+        BtnPlusCopies.IsEnabled = false;
         RbSameFolder.IsEnabled = false;
         RbCustomFolder.IsEnabled = false;
         BtnDuplicate.IsEnabled = false;
@@ -89,7 +159,8 @@ public partial class DuplicateWindow : Window
         var progress = new Progress<int>(current =>
         {
             PbProgress.Value = current;
-            TxtProgressStatus.Text = $"Generando copia {current} de {copies}...";
+            int percent = (int)((double)current / copies * 100);
+            TxtProgressStatus.Text = $"Generando copia {current} de {copies}... ({percent}%)";
         });
 
         try
@@ -102,7 +173,7 @@ public partial class DuplicateWindow : Window
                 _cancellationTokenSource.Token);
 
             MessageBox.Show(
-                $"Se generaron {CharactersGenerated} copias del personaje.",
+                $"Se generaron {CharactersGenerated} copias exitosamente del personaje.",
                 "Operación completada",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -112,7 +183,7 @@ public partial class DuplicateWindow : Window
         catch (OperationCanceledException)
         {
             MessageBox.Show(
-                $"Operación cancelada. Se generaron {CharactersGenerated} de {copies} copias.",
+                $"Operación cancelada. Se alcanzaron a generar {CharactersGenerated} de {copies} copias.",
                 "Cancelado",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -132,6 +203,8 @@ public partial class DuplicateWindow : Window
             _cancellationTokenSource = null;
 
             TxtCopies.IsEnabled = true;
+            BtnMinusCopies.IsEnabled = true;
+            BtnPlusCopies.IsEnabled = true;
             RbSameFolder.IsEnabled = true;
             RbCustomFolder.IsEnabled = true;
             BtnDuplicate.IsEnabled = true;
