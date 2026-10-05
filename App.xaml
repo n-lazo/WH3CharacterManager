@@ -72,6 +72,14 @@
             <Geometry x:Key="IconExternalGeometry">M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z</Geometry>
             <Geometry x:Key="IconHeroGeometry">M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z</Geometry>
             <Geometry x:Key="IconCloseGeometry">M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z</Geometry>
+            <Geometry x:Key="IconMinimizeGeometry">M19 13H5v-2h14v2z</Geometry>
+            <Geometry x:Key="IconMaximizeGeometry">M4 4h16v16H4V4zm2 2v12h12V6H6z</Geometry>
+            <Geometry x:Key="IconRestoreGeometry">M4 8h12v12H4V8zm2 2v8h8v-8H6zm2-6h12v12h-2V6H8V4z</Geometry>
+            <Geometry x:Key="IconTableGeometry">M3 3h18v18H3V3zm16 16V9H5v10h14zm0-12V5H5v2h14z</Geometry>
+            <Geometry x:Key="IconGalleryGeometry">M3 3h7v7H3V3zm11 0h7v7h-7V3zm-11 11h7v7H3v-7zm11 0h7v7h-7v-7z</Geometry>
+            <Geometry x:Key="IconCheckGeometry">M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z</Geometry>
+            <Geometry x:Key="IconInfoGeometry">M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z</Geometry>
+            <Geometry x:Key="IconDeleteGeometry">M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z</Geometry>
 
             <!-- Botón Principal Premium (Glow + Gradient) -->
             <Style x:Key="PrimaryButtonStyle" TargetType="Button">
@@ -298,6 +306,224 @@
                 </Setter>
             </Style>
             <Style x:Key="GamingProgressBarStyle" BasedOn="{StaticResource ModernProgressBarStyle}" TargetType="ProgressBar"/>
+
+            <!-- Botones de Barra de Título Personalizada -->
+            <Style x:Key="TitleBarButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Width" Value="44"/>
+                <Setter Property="Height" Value="34"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#172235"/>
+                                    <Setter Property="Foreground" Value="{StaticResource CyanNeonBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#0F1826"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="TitleBarCloseButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Width" Value="44"/>
+                <Setter Property="Height" Value="34"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#E11D48"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#BE123C"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ScrollBar Moderno Minimalista Gaming (Dark Cyan) -->
+            <Style x:Key="ModernScrollBarThumbStyle" TargetType="{x:Type Thumb}">
+                <Setter Property="OverridesDefaultStyle" Value="true"/>
+                <Setter Property="IsTabStop" Value="false"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Thumb}">
+                            <Border x:Name="thumbBorder" 
+                                    Background="#253248" 
+                                    CornerRadius="3" 
+                                    SnapsToDevicePixels="True"/>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="thumbBorder" Property="Background" Value="{StaticResource CyanNeonBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsDragging" Value="true">
+                                    <Setter TargetName="thumbBorder" Property="Background" Value="{StaticResource CyanLightBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="{x:Type ScrollBar}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="OverridesDefaultStyle" Value="true"/>
+                <Style.Triggers>
+                    <Trigger Property="Orientation" Value="Vertical">
+                        <Setter Property="Width" Value="8"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ScrollBar}">
+                                    <Grid Background="Transparent" SnapsToDevicePixels="true">
+                                        <Track x:Name="PART_Track" IsDirectionReversed="true">
+                                            <Track.Thumb>
+                                                <Thumb Style="{StaticResource ModernScrollBarThumbStyle}"/>
+                                            </Track.Thumb>
+                                        </Track>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                    <Trigger Property="Orientation" Value="Horizontal">
+                        <Setter Property="Height" Value="8"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ScrollBar}">
+                                    <Grid Background="Transparent" SnapsToDevicePixels="true">
+                                        <Track x:Name="PART_Track" IsDirectionReversed="false">
+                                            <Track.Thumb>
+                                                <Thumb Style="{StaticResource ModernScrollBarThumbStyle}"/>
+                                            </Track.Thumb>
+                                        </Track>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Menú Contextual Moderno Gaming -->
+            <Style x:Key="ModernContextMenuStyle" TargetType="{x:Type ContextMenu}">
+                <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="Padding" Value="4,4"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ContextMenu}">
+                            <Border Background="{TemplateBinding Background}" 
+                                    BorderBrush="{TemplateBinding BorderBrush}" 
+                                    BorderThickness="{TemplateBinding BorderThickness}" 
+                                    CornerRadius="8" Padding="{TemplateBinding Padding}" 
+                                    SnapsToDevicePixels="True">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="14" ShadowDepth="4" Opacity="0.5" Color="#000000"/>
+                                </Border.Effect>
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ModernMenuItemStyle" TargetType="{x:Type MenuItem}">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Padding" Value="8,7"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type MenuItem}">
+                            <Border x:Name="menuBorder" Background="Transparent" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="22" SharedSizeGroup="MenuItemIconColumnGroup"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter Grid.Column="0" ContentSource="Icon" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" Margin="8,0,10,0" RecognizesAccessKey="True"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="menuBorder" Property="Background" Value="#172235"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.4"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ModernSeparatorStyle" TargetType="{x:Type Separator}">
+                <Setter Property="Background" Value="{StaticResource BorderSubtleBrush}"/>
+                <Setter Property="Margin" Value="4,4"/>
+                <Setter Property="Height" Value="1"/>
+            </Style>
+
+            <!-- Botones Conmutadores de Modo de Vista (Tabla vs Galería) -->
+            <Style x:Key="ViewToggleButtonStyle" TargetType="{x:Type RadioButton}">
+                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Padding" Value="10,5"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RadioButton}">
+                            <Border x:Name="border" Background="Transparent" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                    <Setter TargetName="border" Property="Background" Value="#172235"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource CyanNeonBrush}"/>
+                                    <Setter TargetName="border" Property="Background" Value="#14263E"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ListBox Moderno para Modo Galería -->
+            <Style x:Key="ModernListBoxStyle" TargetType="{x:Type ListBox}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="Padding" Value="2"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -21,7 +21,19 @@ public partial class DuplicateWindow : Window
         InitializeComponent();
         _originalCharacter = character ?? throw new ArgumentNullException(nameof(character));
         _duplicationService = duplicationService ?? new CharacterDuplicationService();
-        LblCharacterName.Text = character.FileName + ".twc";
+        LblCharacterName.Text = character.DisplayName;
+        LblCharacterSubInfo.Text = $"{character.HeroClassDisplay} • {character.LevelDisplay} • {character.FileName}.twc";
+        if (character.HasPortraitImage)
+        {
+            try
+            {
+                ImgCharacterPortrait.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(character.PortraitImagePath!));
+            }
+            catch
+            {
+                // Fallback al icono de escudo
+            }
+        }
         UpdatePreview();
     }
 

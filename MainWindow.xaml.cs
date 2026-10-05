@@ -7,6 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using WH3CharacterManager.Models;
 using WH3CharacterManager.Services;
@@ -20,6 +22,8 @@ public partial class MainWindow : Window
     private ICollectionView? _charactersView;
     private bool _isScanning;
     private string _searchText = string.Empty;
+    private bool _isSyncingSelection;
+    private DispatcherTimer? _toastTimer;
 
     public MainWindow() : this(null)
     {
@@ -30,7 +34,9 @@ public partial class MainWindow : Window
         InitializeComponent();
         _scannerService = scannerService ?? new CharacterScannerService();
         _characterFiles = new ObservableCollection<CharacterFile>();
+        
         LvCharacters.ItemsSource = _characterFiles;
+        LbGallery.ItemsSource = _characterFiles;
 
         _charactersView = CollectionViewSource.GetDefaultView(_characterFiles);
         _charactersView.Filter = FilterCharacter;
@@ -52,6 +58,100 @@ public partial class MainWindow : Window
             UpdateEmptyState();
         }
     }
+
+    #region Window TitleBar Controls & Keyboard Shortcuts
+
+    private void BtnMinimize_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void BtnMaximize_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
+
+    private void BtnClose_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void Window_StateChanged(object sender, EventArgs e)
+    {
+        if (IconMaximizePath != null)
+        {
+            IconMaximizePath.Data = (Geometry)FindResource(
+                WindowState == WindowState.Maximized ? "IconRestoreGeometry" : "IconMaximizeGeometry");
+        }
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F5 || (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control))
+        {
+            _ = ScanFolderAsync();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            TxtSearchFilter.Focus();
+            TxtSearchFilter.SelectAll();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && TxtSearchFilter.IsFocused)
+        {
+            TxtSearchFilter.Text = string.Empty;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete && !TxtSearchFilter.IsFocused && !TxtFolderPath.IsFocused)
+        {
+            if (GetSelectedCharacter() != null)
+            {
+                DeleteSelectedCharacter();
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Enter && !TxtSearchFilter.IsFocused && !TxtFolderPath.IsFocused)
+        {
+            if (GetSelectedCharacter() != null)
+            {
+                BtnDuplicateCharacter_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
+    }
+
+    #endregion
+
+    #region View Mode Switcher (Table vs Gallery)
+
+    private void ViewToggle_Click(object sender, RoutedEventArgs e)
+    {
+        bool isGallery = RbViewGallery.IsChecked == true;
+
+        if (isGallery)
+        {
+            LvCharacters.Visibility = Visibility.Collapsed;
+            LbGallery.Visibility = Visibility.Visible;
+            if (LbGallery.SelectedItem != null)
+            {
+                LbGallery.ScrollIntoView(LbGallery.SelectedItem);
+            }
+        }
+        else
+        {
+            LbGallery.Visibility = Visibility.Collapsed;
+            LvCharacters.Visibility = Visibility.Visible;
+            if (LvCharacters.SelectedItem != null)
+            {
+                LvCharacters.ScrollIntoView(LvCharacters.SelectedItem);
+            }
+        }
+    }
+
+    #endregion
+
+    #region Scanning & Data
 
     private async void BtnScanFolder_Click(object sender, RoutedEventArgs e)
     {
@@ -92,6 +192,7 @@ public partial class MainWindow : Window
 
             StatusText.Text = $"Se encontraron {_characterFiles.Count} personajes.";
             StatusDot.Fill = new SolidColorBrush(Color.FromRgb(16, 185, 129)); // Verde éxito
+            ShowToast($"✓ Escaneo completado: {_characterFiles.Count} personajes encontrados.");
         }
         catch (Exception ex)
         {
@@ -111,8 +212,10 @@ public partial class MainWindow : Window
         _isScanning = scanning;
         BtnScanFolder.IsEnabled = !scanning;
         BtnBrowseFolder.IsEnabled = !scanning;
-        BtnDuplicateCharacter.IsEnabled = !scanning && LvCharacters.SelectedItem is CharacterFile;
-        BtnExportCharacter.IsEnabled = !scanning && LvCharacters.SelectedItem is CharacterFile;
+        bool hasSelection = GetSelectedCharacter() != null;
+        BtnDuplicateCharacter.IsEnabled = !scanning && hasSelection;
+        BtnExportCharacter.IsEnabled = !scanning && hasSelection;
+        BtnDeleteCharacter.IsEnabled = !scanning && hasSelection;
     }
 
     private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
@@ -153,6 +256,10 @@ public partial class MainWindow : Window
             MessageBox.Show("La carpeta no existe o no ha sido configurada.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
+
+    #endregion
+
+    #region Filtering
 
     private void TxtSearchFilter_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -212,12 +319,62 @@ public partial class MainWindow : Window
         EmptyStateOverlay.Visibility = hasVisibleItems ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    #endregion
+
+    #region Selection & Character Details
+
+    public CharacterFile? GetSelectedCharacter()
+    {
+        if (RbViewGallery?.IsChecked == true)
+            return LbGallery.SelectedItem as CharacterFile;
+        return LvCharacters.SelectedItem as CharacterFile;
+    }
+
     private void LvCharacters_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (LvCharacters.SelectedItem is CharacterFile selected)
+        if (_isSyncingSelection) return;
+        _isSyncingSelection = true;
+        try
         {
-            BtnDuplicateCharacter.IsEnabled = true;
-            BtnExportCharacter.IsEnabled = true;
+            var selected = LvCharacters.SelectedItem as CharacterFile;
+            if (LbGallery.SelectedItem != selected)
+            {
+                LbGallery.SelectedItem = selected;
+            }
+            UpdateCharacterSelection(selected);
+        }
+        finally
+        {
+            _isSyncingSelection = false;
+        }
+    }
+
+    private void LbGallery_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isSyncingSelection) return;
+        _isSyncingSelection = true;
+        try
+        {
+            var selected = LbGallery.SelectedItem as CharacterFile;
+            if (LvCharacters.SelectedItem != selected)
+            {
+                LvCharacters.SelectedItem = selected;
+            }
+            UpdateCharacterSelection(selected);
+        }
+        finally
+        {
+            _isSyncingSelection = false;
+        }
+    }
+
+    private void UpdateCharacterSelection(CharacterFile? selected)
+    {
+        if (selected != null)
+        {
+            BtnDuplicateCharacter.IsEnabled = !_isScanning;
+            BtnExportCharacter.IsEnabled = !_isScanning;
+            BtnDeleteCharacter.IsEnabled = !_isScanning;
 
             TxtSelectedName.Text = selected.DisplayName;
 
@@ -270,13 +427,18 @@ public partial class MainWindow : Window
             TxtSelectedLevel.Text = selected.LevelDisplay;
             TxtSelectedTrait.Text = selected.TraitDisplay;
 
+            // Mostrar habilidades con badges o mensaje por defecto
             if (selected.Metadata?.Skills.Count > 0)
             {
-                TxtSelectedSkills.Text = string.Join(", ", selected.Metadata.Skills);
+                IcSelectedSkills.ItemsSource = selected.Metadata.Skills;
+                IcSelectedSkills.Visibility = Visibility.Visible;
+                TxtNoSkills.Visibility = Visibility.Collapsed;
             }
             else
             {
-                TxtSelectedSkills.Text = "Habilidades base de campaña";
+                IcSelectedSkills.ItemsSource = null;
+                IcSelectedSkills.Visibility = Visibility.Collapsed;
+                TxtNoSkills.Visibility = Visibility.Visible;
             }
 
             TxtSelectedFileName.Text = selected.FileName + ".twc";
@@ -288,15 +450,51 @@ public partial class MainWindow : Window
         {
             BtnDuplicateCharacter.IsEnabled = false;
             BtnExportCharacter.IsEnabled = false;
+            BtnDeleteCharacter.IsEnabled = false;
 
             CardSelectedInfo.Visibility = Visibility.Collapsed;
             CardNoSelection.Visibility = Visibility.Visible;
         }
     }
 
+    private void LvCharacters_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (GetSelectedCharacter() != null)
+        {
+            BtnDuplicateCharacter_Click(sender, e);
+        }
+    }
+
+    private void LbGallery_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (GetSelectedCharacter() != null)
+        {
+            BtnDuplicateCharacter_Click(sender, e);
+        }
+    }
+
+    private void OnItemPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListViewItem lvi)
+        {
+            lvi.IsSelected = true;
+            lvi.Focus();
+        }
+        else if (sender is ListBoxItem lbi)
+        {
+            lbi.IsSelected = true;
+            lbi.Focus();
+        }
+    }
+
+    #endregion
+
+    #region Character Actions (Duplicate, Export, Locate, Delete)
+
     private async void BtnDuplicateCharacter_Click(object sender, RoutedEventArgs e)
     {
-        if (LvCharacters.SelectedItem is not CharacterFile selectedCharacter)
+        CharacterFile? selectedCharacter = GetSelectedCharacter();
+        if (selectedCharacter == null)
         {
             MessageBox.Show("Por favor, selecciona un personaje para duplicar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
@@ -312,20 +510,14 @@ public partial class MainWindow : Window
         if (duplicateWindow.CharactersGenerated > 0)
         {
             await ScanFolderAsync();
-        }
-    }
-
-    private void LvCharacters_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (LvCharacters.SelectedItem is CharacterFile)
-        {
-            BtnDuplicateCharacter_Click(sender, e);
+            ShowToast($"✓ Se generaron {duplicateWindow.CharactersGenerated} copias exitosamente.");
         }
     }
 
     private void BtnExportCharacter_Click(object sender, RoutedEventArgs e)
     {
-        if (LvCharacters.SelectedItem is not CharacterFile selectedCharacter)
+        CharacterFile? selectedCharacter = GetSelectedCharacter();
+        if (selectedCharacter == null)
         {
             MessageBox.Show("Por favor, selecciona un personaje para exportar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
@@ -343,7 +535,7 @@ public partial class MainWindow : Window
             try
             {
                 File.Copy(selectedCharacter.FilePath, saveDialog.FileName, overwrite: true);
-                MessageBox.Show("Personaje exportado correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowToast($"✓ Personaje '{selectedCharacter.DisplayName}' exportado correctamente.");
             }
             catch (Exception ex)
             {
@@ -351,4 +543,127 @@ public partial class MainWindow : Window
             }
         }
     }
+
+    private void BtnOpenFileLocation_Click(object sender, RoutedEventArgs e)
+    {
+        CharacterFile? selected = GetSelectedCharacter();
+        if (selected != null && File.Exists(selected.FilePath))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{selected.FilePath}\"",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"No se pudo abrir el explorador: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void BtnDeleteCharacter_Click(object sender, RoutedEventArgs e)
+    {
+        DeleteSelectedCharacter();
+    }
+
+    private void DeleteSelectedCharacter()
+    {
+        CharacterFile? selected = GetSelectedCharacter();
+        if (selected == null)
+            return;
+
+        var result = MessageBox.Show(
+            $"¿Estás seguro de que deseas eliminar el personaje '{selected.DisplayName}'?\n\nArchivo: {selected.FileName}.twc\nEsta acción no se puede deshacer.",
+            "Confirmar eliminación",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            try
+            {
+                if (File.Exists(selected.FilePath))
+                {
+                    File.Delete(selected.FilePath);
+                }
+
+                _characterFiles.Remove(selected);
+                ApplyFilter();
+                UpdateCharacterSelection(null);
+                ShowToast($"✓ Personaje '{selected.DisplayName}' eliminado correctamente.", true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al eliminar el archivo: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    #endregion
+
+    #region Context Menu Handlers
+
+    private void CtxDuplicate_Click(object sender, RoutedEventArgs e)
+    {
+        BtnDuplicateCharacter_Click(sender, e);
+    }
+
+    private void CtxExport_Click(object sender, RoutedEventArgs e)
+    {
+        BtnExportCharacter_Click(sender, e);
+    }
+
+    private void CtxShowInExplorer_Click(object sender, RoutedEventArgs e)
+    {
+        BtnOpenFileLocation_Click(sender, e);
+    }
+
+    private void CtxCopyName_Click(object sender, RoutedEventArgs e)
+    {
+        CharacterFile? selected = GetSelectedCharacter();
+        if (selected != null)
+        {
+            Clipboard.SetText(selected.DisplayName);
+            ShowToast($"✓ Nombre copiado: \"{selected.DisplayName}\"");
+        }
+    }
+
+    private void CtxDeleteCharacter_Click(object sender, RoutedEventArgs e)
+    {
+        DeleteSelectedCharacter();
+    }
+
+    #endregion
+
+    #region In-App Toast Notification
+
+    public void ShowToast(string message, bool isSuccess = true)
+    {
+        TxtToastMessage.Text = message;
+        ToastIcon.Data = (Geometry)FindResource(isSuccess ? "IconCheckGeometry" : "IconInfoGeometry");
+        ToastIcon.Fill = (Brush)FindResource(isSuccess ? "CyanNeonBrush" : "TextSecondaryBrush");
+        ToastNotification.BorderBrush = (Brush)FindResource(isSuccess ? "CyanNeonBrush" : "BorderSubtleBrush");
+
+        ToastNotification.Visibility = Visibility.Visible;
+
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+        ToastNotification.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+
+        _toastTimer?.Stop();
+        _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _toastTimer.Tick += (s, e) =>
+        {
+            _toastTimer.Stop();
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
+            fadeOut.Completed += (s2, e2) => ToastNotification.Visibility = Visibility.Collapsed;
+            ToastNotification.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        };
+        _toastTimer.Start();
+    }
+
+    #endregion
 }

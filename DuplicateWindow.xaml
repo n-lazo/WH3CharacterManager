@@ -1,166 +1,208 @@
 <Window x:Class="WH3CharacterManager.DuplicateWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Duplicar Personaje - Warhammer 3" Height="590" Width="520"
+        Title="Duplicar Personaje - Warhammer 3" Height="620" Width="520"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        WindowStyle="None"
         Background="{StaticResource AppBgBrush}"
+        BorderBrush="{StaticResource BorderSubtleBrush}"
+        BorderThickness="1"
         FontFamily="Segoe UI, Inter, Arial"
         TextOptions.TextFormattingMode="Display"
         RenderOptions.ClearTypeHint="Enabled">
 
-    <Border Margin="16" Background="{StaticResource SurfaceCardBrush}" 
-            BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="10">
-        <Grid Margin="18">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/> <!-- Encabezado -->
-                <RowDefinition Height="Auto"/> <!-- Info Personaje -->
-                <RowDefinition Height="Auto"/> <!-- Número de copias -->
-                <RowDefinition Height="Auto"/> <!-- Vista previa -->
-                <RowDefinition Height="Auto"/> <!-- Carpeta destino -->
-                <RowDefinition Height="*"/>    <!-- Barra de progreso -->
-                <RowDefinition Height="Auto"/> <!-- Botones de acción -->
-            </Grid.RowDefinitions>
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="36" ResizeBorderThickness="0" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
-            <!-- 1. Encabezado -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Path Data="{StaticResource IconCopyGeometry}" Fill="{StaticResource CyanNeonBrush}" 
-                          Width="20" Height="20" Stretch="Uniform" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="DUPLICAR PERSONAJE" FontWeight="Bold" FontSize="18" 
-                               Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                </StackPanel>
-                <TextBlock Text="Crea copias funcionales con identificadores únicos en formato Warhammer 3" 
-                           FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Barra de Título -->
+            <RowDefinition Height="*"/>    <!-- Cuerpo -->
+        </Grid.RowDefinitions>
+
+        <!-- Barra de Título Personalizada -->
+        <Grid Grid.Row="0" Height="36" Background="#0A0D14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                <Path Data="{StaticResource IconCopyGeometry}" Fill="{StaticResource CyanNeonBrush}" 
+                      Width="14" Height="14" Stretch="Uniform" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="DUPLICAR PERSONAJE" FontSize="11" FontWeight="Bold" 
+                           Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
             </StackPanel>
 
-            <!-- 2. Información del personaje seleccionado -->
-            <Border Grid.Row="1" Margin="0,0,0,14" Background="{StaticResource SurfaceInputBrush}" 
-                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Width="36" Height="36" CornerRadius="6" Background="#142338" 
-                            BorderBrush="{StaticResource CyanNeonBrush}" BorderThickness="1" Margin="0,0,12,0">
-                        <Path Data="{StaticResource IconHeroGeometry}" Fill="{StaticResource CyanLightBrush}" 
-                              Width="18" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="PERSONAJE ORIGINAL:" FontSize="10" FontWeight="Bold" 
-                                   Foreground="{StaticResource TextMutedBrush}"/>
-                        <TextBlock x:Name="LblCharacterName" FontSize="13" FontWeight="Bold" 
-                                   Foreground="{StaticResource CyanNeonBrush}" TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
+            <Button Grid.Column="1" Style="{StaticResource TitleBarCloseButtonStyle}" 
+                    Click="BtnCancel_Click" ToolTip="Cerrar" WindowChrome.IsHitTestVisibleInChrome="True">
+                <Path Data="{StaticResource IconCloseGeometry}" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" 
+                      Width="10" Height="10" Stretch="Uniform"/>
+            </Button>
+        </Grid>
 
-            <!-- 3. Opciones de duplicación y Stepper -->
-            <Border Grid.Row="2" Margin="0,0,0,14" Background="{StaticResource SurfaceInputBrush}" 
-                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
-                <StackPanel>
-                    <TextBlock Text="NÚMERO DE COPIAS A GENERAR" FontSize="11" FontWeight="Bold" 
-                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+        <!-- Contenedor Principal de la Ventana -->
+        <Border Grid.Row="1" Margin="14,2,14,14" Background="{StaticResource SurfaceCardBrush}" 
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8">
+            <Grid Margin="18">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Encabezado -->
+                    <RowDefinition Height="Auto"/> <!-- Info Personaje -->
+                    <RowDefinition Height="Auto"/> <!-- Número de copias -->
+                    <RowDefinition Height="Auto"/> <!-- Vista previa -->
+                    <RowDefinition Height="Auto"/> <!-- Carpeta destino -->
+                    <RowDefinition Height="*"/>    <!-- Barra de progreso -->
+                    <RowDefinition Height="Auto"/> <!-- Botones de acción -->
+                </Grid.RowDefinitions>
 
+                <!-- 1. Encabezado -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                    <TextBlock Text="GENERADOR DE COPIAS FUNCIONALES" FontWeight="Bold" FontSize="15" 
+                               Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Genera copias con identificadores únicos compatibles con Warhammer 3" 
+                               FontSize="11.5" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <!-- 2. Información del personaje seleccionado con Retrato -->
+                <Border Grid.Row="1" Margin="0,0,0,14" Background="{StaticResource SurfaceInputBrush}" 
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Botón Restar -->
-                        <Button x:Name="BtnMinusCopies" Grid.Column="0" Content="-" Width="32" Height="32" 
-                                Style="{StaticResource SecondaryButtonStyle}" Padding="0" FontSize="16" 
-                                Click="BtnMinusCopies_Click" ToolTip="Restar 1"/>
+                        <!-- Marco de Retrato -->
+                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="6" Background="#142338" 
+                                BorderBrush="{StaticResource CyanNeonBrush}" BorderThickness="1" Margin="0,0,12,0"
+                                ClipToBounds="True" VerticalAlignment="Center">
+                            <Grid>
+                                <Path Data="{StaticResource IconHeroGeometry}" Fill="{StaticResource CyanLightBrush}" 
+                                      Width="20" Height="20" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Image x:Name="ImgCharacterPortrait" Stretch="UniformToFill" 
+                                       RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
 
-                        <!-- Input Cantidad -->
-                        <TextBox x:Name="TxtCopies" Grid.Column="1" Text="10" 
-                                 Style="{StaticResource ModernTextBoxStyle}" 
-                                 TextAlignment="Center" FontWeight="Bold" FontSize="14" 
-                                 Margin="6,0" TextChanged="TxtCopies_TextChanged"/>
-
-                        <!-- Botón Sumar -->
-                        <Button x:Name="BtnPlusCopies" Grid.Column="2" Content="+" Width="32" Height="32" 
-                                Style="{StaticResource SecondaryButtonStyle}" Padding="0" FontSize="16" 
-                                Click="BtnPlusCopies_Click" ToolTip="Sumar 1"/>
-
-                        <!-- Presets rápidos -->
-                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Content="+1" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
-                            <Button Content="+5" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
-                            <Button Content="+10" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
-                            <Button Content="+25" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="PERSONAJE BASE:" FontSize="9.5" FontWeight="Bold" 
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock x:Name="LblCharacterName" FontSize="14" FontWeight="Bold" 
+                                       Foreground="{StaticResource CyanNeonBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="LblCharacterSubInfo" FontSize="11" 
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
-                </StackPanel>
-            </Border>
+                </Border>
 
-            <!-- 4. Vista previa de IDs generados -->
-            <Border Grid.Row="3" Margin="0,0,0,14" Background="#0C1420" 
-                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
-                <StackPanel>
-                    <TextBlock Text="VISTA PREVIA DE GENERACIÓN" FontSize="10" FontWeight="Bold" 
-                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
-                    <Grid Margin="0,2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Primera copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="90"/>
-                        <TextBlock x:Name="TxtPreviewFirst" Grid.Column="1" Text="Calculando..." FontSize="11" 
-                                   Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                    </Grid>
-                    <Grid Margin="0,2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Última copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="90"/>
-                        <TextBlock x:Name="TxtPreviewLast" Grid.Column="1" Text="Calculando..." FontSize="11" 
-                                   Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
+                <!-- 3. Opciones de duplicación y Stepper -->
+                <Border Grid.Row="2" Margin="0,0,0,14" Background="{StaticResource SurfaceInputBrush}" 
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="NÚMERO DE COPIAS A GENERAR" FontSize="11" FontWeight="Bold" 
+                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
 
-            <!-- 5. Opción de carpeta destino -->
-            <StackPanel Grid.Row="4" Margin="0,0,0,10">
-                <TextBlock Text="UBICACIÓN DE DESTINO" FontSize="11" FontWeight="Bold" 
-                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                <RadioButton x:Name="RbSameFolder" Content="Guardar en la misma carpeta original" 
-                             IsChecked="True" Style="{StaticResource ModernRadioButtonStyle}"/>
-                <RadioButton x:Name="RbCustomFolder" Content="Seleccionar otra carpeta de destino..." 
-                             Style="{StaticResource ModernRadioButtonStyle}"/>
-            </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-            <!-- 6. Barra de progreso y estado -->
-            <StackPanel Grid.Row="5" VerticalAlignment="Center" Margin="0,6,0,10">
-                <TextBlock x:Name="TxtProgressStatus" Text="" HorizontalAlignment="Center" Margin="0,0,0,6"
-                           Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" FontSize="12" Visibility="Collapsed"/>
-                <ProgressBar x:Name="PbProgress" Style="{StaticResource ModernProgressBarStyle}"/>
-            </StackPanel>
+                            <!-- Botón Restar -->
+                            <Button x:Name="BtnMinusCopies" Grid.Column="0" Content="-" Width="32" Height="32" 
+                                    Style="{StaticResource SecondaryButtonStyle}" Padding="0" FontSize="16" 
+                                    Click="BtnMinusCopies_Click" ToolTip="Restar 1"/>
 
-            <!-- 7. Botones de acción -->
-            <Grid Grid.Row="6" Margin="0,6,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                            <!-- Input Cantidad -->
+                            <TextBox x:Name="TxtCopies" Grid.Column="1" Text="10" 
+                                     Style="{StaticResource ModernTextBoxStyle}" 
+                                     TextAlignment="Center" FontWeight="Bold" FontSize="14" 
+                                     Margin="6,0" TextChanged="TxtCopies_TextChanged"/>
 
-                <Button x:Name="BtnCancel" Grid.Column="1" Content="CANCELAR" Width="110" Height="38" 
-                        Margin="0,0,10,0" Style="{StaticResource SecondaryButtonStyle}" Click="BtnCancel_Click"/>
+                            <!-- Botón Sumar -->
+                            <Button x:Name="BtnPlusCopies" Grid.Column="2" Content="+" Width="32" Height="32" 
+                                    Style="{StaticResource SecondaryButtonStyle}" Padding="0" FontSize="16" 
+                                    Click="BtnPlusCopies_Click" ToolTip="Sumar 1"/>
 
-                <Button x:Name="BtnDuplicate" Grid.Column="2" Width="140" Height="38" 
-                        Style="{StaticResource PrimaryButtonStyle}" Click="BtnDuplicate_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Data="{StaticResource IconCopyGeometry}" Fill="White" 
-                              Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0"/>
-                        <TextBlock Text="DUPLICAR" FontWeight="Bold"/>
+                            <!-- Presets rápidos -->
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button Content="+1" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
+                                <Button Content="+5" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
+                                <Button Content="+10" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
+                                <Button Content="+25" Style="{StaticResource SecondaryButtonStyle}" Padding="8,4" FontSize="11" Margin="3,0" Click="BtnPreset_Click"/>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
-                </Button>
+                </Border>
+
+                <!-- 4. Vista previa de IDs generados -->
+                <Border Grid.Row="3" Margin="0,0,0,14" Background="#0C1420" 
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="VISTA PREVIA DE GENERACIÓN" FontSize="10" FontWeight="Bold" 
+                                   Foreground="{StaticResource TextMutedBrush}" Margin="0,0,6,0"/>
+                        <Grid Margin="0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Primera copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="90"/>
+                            <TextBlock x:Name="TxtPreviewFirst" Grid.Column="1" Text="Calculando..." FontSize="11" 
+                                       Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                        <Grid Margin="0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Última copia:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Width="90"/>
+                            <TextBlock x:Name="TxtPreviewLast" Grid.Column="1" Text="Calculando..." FontSize="11" 
+                                       Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. Opción de carpeta destino -->
+                <StackPanel Grid.Row="4" Margin="0,0,0,10">
+                    <TextBlock Text="UBICACIÓN DE DESTINO" FontSize="11" FontWeight="Bold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                    <RadioButton x:Name="RbSameFolder" Content="Guardar en la misma carpeta original" 
+                                 IsChecked="True" Style="{StaticResource ModernRadioButtonStyle}"/>
+                    <RadioButton x:Name="RbCustomFolder" Content="Seleccionar otra carpeta de destino..." 
+                                 Style="{StaticResource ModernRadioButtonStyle}"/>
+                </StackPanel>
+
+                <!-- 6. Barra de progreso y estado -->
+                <StackPanel Grid.Row="5" VerticalAlignment="Center" Margin="0,4,0,10">
+                    <TextBlock x:Name="TxtProgressStatus" Text="" HorizontalAlignment="Center" Margin="0,0,0,6"
+                               Foreground="{StaticResource CyanLightBrush}" FontWeight="SemiBold" FontSize="12" Visibility="Collapsed"/>
+                    <ProgressBar x:Name="PbProgress" Style="{StaticResource ModernProgressBarStyle}"/>
+                </StackPanel>
+
+                <!-- 7. Botones de acción -->
+                <Grid Grid.Row="6" Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="BtnCancel" Grid.Column="1" Content="CANCELAR" Width="110" Height="38" 
+                            Margin="0,0,10,0" Style="{StaticResource SecondaryButtonStyle}" Click="BtnCancel_Click"/>
+
+                    <Button x:Name="BtnDuplicate" Grid.Column="2" Width="140" Height="38" 
+                            Style="{StaticResource PrimaryButtonStyle}" Click="BtnDuplicate_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource IconCopyGeometry}" Fill="White" 
+                                  Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0"/>
+                            <TextBlock Text="DUPLICAR" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
             </Grid>
-        </Grid>
-    </Border>
+        </Border>
+    </Grid>
 </Window>
