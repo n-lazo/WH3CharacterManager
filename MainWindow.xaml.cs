@@ -579,8 +579,8 @@ public partial class MainWindow : Window
     {
         string arrow = direction == ListSortDirection.Ascending ? " ▲" : " ▼";
         if (ColHeaderPersonaje != null) ColHeaderPersonaje.Header = "PERSONAJE" + (propertyName == "DisplayName" ? arrow : "");
-        if (ColHeaderClase != null) ColHeaderClase.Header = "CLASE / HÉROE" + (propertyName == "HeroClassDisplay" ? arrow : "");
-        if (ColHeaderRaza != null) ColHeaderRaza.Header = "RAZA" + (propertyName == "RaceDisplay" ? arrow : "");
+        if (ColHeaderClase != null) ColHeaderClase.Header = "CLASE / RANGO" + (propertyName == "HeroClassDisplay" ? arrow : "");
+        if (ColHeaderRaza != null) ColHeaderRaza.Header = "FACCIÓN / RAZA" + (propertyName == "RaceDisplay" ? arrow : "");
         if (ColHeaderNivel != null) ColHeaderNivel.Header = "NIVEL" + (propertyName == "Level" ? arrow : "");
         if (ColHeaderRasgo != null) ColHeaderRasgo.Header = "RASGO INNATO" + (propertyName == "TraitDisplay" ? arrow : "");
         if (ColHeaderTamano != null) ColHeaderTamano.Header = "TAMAÑO" + (propertyName == "FileSizeBytes" ? arrow : "");
@@ -678,17 +678,42 @@ public partial class MainWindow : Window
             {
                 try
                 {
-                    ImgSelectedRace.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(selected.RaceIconPath!));
+                    var raceBitmap = new System.Windows.Media.Imaging.BitmapImage(new Uri(selected.RaceIconPath!));
+                    ImgSelectedRace.Source = raceBitmap;
                     ImgSelectedRace.Visibility = Visibility.Visible;
+                    if (ImgSelectedBannerWatermark != null)
+                    {
+                        ImgSelectedBannerWatermark.Source = raceBitmap;
+                        ImgSelectedBannerWatermark.Visibility = Visibility.Visible;
+                    }
                 }
                 catch
                 {
                     ImgSelectedRace.Visibility = Visibility.Collapsed;
+                    if (ImgSelectedBannerWatermark != null)
+                        ImgSelectedBannerWatermark.Visibility = Visibility.Collapsed;
                 }
             }
             else
             {
                 ImgSelectedRace.Visibility = Visibility.Collapsed;
+                if (ImgSelectedBannerWatermark != null)
+                    ImgSelectedBannerWatermark.Visibility = Visibility.Collapsed;
+            }
+
+            // Estilo visual Lord (Oro Imperial) vs Héroe (Cian Neón)
+            bool isLord = selected.IsLord;
+            if (BorderSelectedPortraitFrame != null)
+            {
+                BorderSelectedPortraitFrame.BorderBrush = (Brush)FindResource(isLord ? "GoldPrimaryBrush" : "CyanNeonBrush");
+            }
+            if (BorderSelectedRoleBadge != null && TxtSelectedRoleBadge != null && IconSelectedRoleCrown != null)
+            {
+                BorderSelectedRoleBadge.Background = (Brush)FindResource(isLord ? "GoldDarkBrush" : "BlueDarkBrush");
+                BorderSelectedRoleBadge.BorderBrush = (Brush)FindResource(isLord ? "GoldPrimaryBrush" : "BluePrimaryBrush");
+                TxtSelectedRoleBadge.Text = selected.RoleShortDisplay;
+                TxtSelectedRoleBadge.Foreground = (Brush)FindResource(isLord ? "GoldLightBrush" : "CyanLightBrush");
+                IconSelectedRoleCrown.Visibility = isLord ? Visibility.Visible : Visibility.Collapsed;
             }
 
             TxtSelectedClass.Text = selected.HeroClassDisplay;
@@ -699,12 +724,16 @@ public partial class MainWindow : Window
             // Mostrar habilidades con badges o mensaje por defecto
             if (selected.Metadata?.Skills.Count > 0)
             {
+                if (TxtSkillsHeader != null)
+                    TxtSkillsHeader.Text = $"HABILIDADES APRENDIDAS ({selected.Metadata.Skills.Count})";
                 IcSelectedSkills.ItemsSource = selected.Metadata.Skills;
                 IcSelectedSkills.Visibility = Visibility.Visible;
                 TxtNoSkills.Visibility = Visibility.Collapsed;
             }
             else
             {
+                if (TxtSkillsHeader != null)
+                    TxtSkillsHeader.Text = "HABILIDADES APRENDIDAS";
                 IcSelectedSkills.ItemsSource = null;
                 IcSelectedSkills.Visibility = Visibility.Collapsed;
                 TxtNoSkills.Visibility = Visibility.Visible;
@@ -775,7 +804,15 @@ public partial class MainWindow : Window
             Owner = this
         };
 
-        duplicateWindow.ShowDialog();
+        if (ModalBackdrop != null) ModalBackdrop.Visibility = Visibility.Visible;
+        try
+        {
+            duplicateWindow.ShowDialog();
+        }
+        finally
+        {
+            if (ModalBackdrop != null) ModalBackdrop.Visibility = Visibility.Collapsed;
+        }
 
         if (duplicateWindow.CharactersGenerated > 0)
         {
@@ -798,7 +835,18 @@ public partial class MainWindow : Window
             Owner = this
         };
 
-        if (editWindow.ShowDialog() == true)
+        bool? dialogResult;
+        if (ModalBackdrop != null) ModalBackdrop.Visibility = Visibility.Visible;
+        try
+        {
+            dialogResult = editWindow.ShowDialog();
+        }
+        finally
+        {
+            if (ModalBackdrop != null) ModalBackdrop.Visibility = Visibility.Collapsed;
+        }
+
+        if (dialogResult == true || editWindow.WasSaved)
         {
             string selectedFilePath = selectedCharacter.FilePath;
             await ScanFolderAsync();

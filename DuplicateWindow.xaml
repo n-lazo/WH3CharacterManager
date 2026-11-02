@@ -45,15 +45,18 @@
 
         <!-- Contenedor Principal de la Ventana -->
         <Border Grid.Row="1" Margin="14,2,14,14" Background="{StaticResource SurfaceCardBrush}" 
-                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8">
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="2.5"/>  <!-- Barra luminosa superior -->
                     <RowDefinition Height="*"/>    <!-- Contenido Scrollable -->
                     <RowDefinition Height="Auto"/> <!-- Footer Fijo Anclado -->
                 </Grid.RowDefinitions>
 
+                <Border Grid.Row="0" Background="{StaticResource HeaderGlowGradient}"/>
+
                 <!-- Zona de Contenido Scrollable -->
-                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               Focusable="False" Padding="16,14,16,8">
                     <StackPanel>
                         <!-- 1. Encabezado -->
@@ -142,10 +145,10 @@
                         <Border Margin="0,0,0,8" Background="{StaticResource SurfaceInputBrush}" 
                                 BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
                             <StackPanel>
-                                <CheckBox x:Name="ChkDifferentiateCopies" IsChecked="True" 
+                                <CheckBox x:Name="ChkDifferentiateCopies" Style="{StaticResource ModernCheckBoxStyle}" IsChecked="True" 
                                           Checked="ChkDifferentiateCopies_Changed" Unchecked="ChkDifferentiateCopies_Changed">
                                     <TextBlock Text="Diferenciar nombres de las copias (in-game)" FontWeight="Bold" FontSize="11" 
-                                               Foreground="{StaticResource TextPrimaryBrush}" Margin="6,0,0,0"/>
+                                               Foreground="{StaticResource TextPrimaryBrush}" Margin="2,0,0,0"/>
                                 </CheckBox>
 
                                 <StackPanel x:Name="PanelNamingPatterns" Margin="0,8,0,0">
@@ -224,8 +227,8 @@
                 </ScrollViewer>
 
                 <!-- Footer Fijo Anclado -->
-                <Border Grid.Row="1" Background="#0C101A" BorderBrush="{StaticResource BorderSubtleBrush}" 
-                        BorderThickness="0,1,0,0" CornerRadius="0,0,7,7" Padding="16,10,16,12">
+                <Border Grid.Row="2" Background="#0C101A" BorderBrush="{StaticResource BorderSubtleBrush}" 
+                        BorderThickness="0,1,0,0" CornerRadius="0,0,9,9" Padding="16,10,16,12">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>

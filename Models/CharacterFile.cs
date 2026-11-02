@@ -51,6 +51,13 @@ public class CharacterFile
     public string TraitDisplay => Metadata?.Trait ?? "-";
     public string RoleDisplay => Metadata?.Role ?? "Héroe";
 
+    public bool IsLord => RoleDisplay.Contains("Lord", StringComparison.OrdinalIgnoreCase) ||
+                          RoleDisplay.Contains("Comandante", StringComparison.OrdinalIgnoreCase);
+    public string RoleShortDisplay => IsLord ? "LORD" : "HÉROE";
+    public int SkillCount => Metadata?.Skills.Count ?? 0;
+    public bool HasSavedTag => !string.IsNullOrWhiteSpace(Metadata?.SavedName);
+    public string SavedTagBadge => HasSavedTag ? $"#{Metadata!.SavedName}" : string.Empty;
+
     public string? PortraitImagePath => Metadata?.PortraitImagePath;
     public string? RaceIconPath => Metadata?.RaceIconPath;
     public bool HasPortraitImage => !string.IsNullOrEmpty(PortraitImagePath) && System.IO.File.Exists(PortraitImagePath);

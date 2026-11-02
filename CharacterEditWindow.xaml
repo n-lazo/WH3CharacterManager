@@ -44,8 +44,14 @@
 
         <!-- Contenedor Principal de la Ventana -->
         <Border Grid.Row="1" Margin="14,2,14,14" Background="{StaticResource SurfaceCardBrush}" 
-                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="8">
-            <Grid Margin="18">
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2.5"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Background="{StaticResource HeaderGlowGradient}"/>
+                <Grid Grid.Row="1" Margin="18">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- Encabezado -->
                     <RowDefinition Height="Auto"/> <!-- Resumen Héroe -->
@@ -121,9 +127,9 @@
 
                 <!-- 4. Opción de Respaldo -->
                 <Border Grid.Row="3" Margin="0,4,0,12" Background="#0C1420" 
-                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
-                    <CheckBox x:Name="ChkCreateBackup" IsChecked="True" VerticalAlignment="Center">
-                        <StackPanel Margin="6,0,0,0">
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="7" Padding="12,10">
+                    <CheckBox x:Name="ChkCreateBackup" Style="{StaticResource ModernCheckBoxStyle}" IsChecked="True" VerticalAlignment="Center">
+                        <StackPanel Margin="4,0,0,0">
                             <TextBlock Text="Crear copia de respaldo (.bak) antes de guardar" FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource TextPrimaryBrush}"/>
                             <TextBlock Text="Permite restaurar el archivo original si surge cualquier incompatibilidad" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                         </StackPanel>
@@ -141,7 +147,7 @@
                     <Button x:Name="BtnCancel" Grid.Column="1" Content="CANCELAR" Width="110" Height="38" 
                             Margin="0,0,10,0" Style="{StaticResource SecondaryButtonStyle}" Click="BtnCancel_Click"/>
 
-                    <Button x:Name="BtnSave" Grid.Column="2" Width="150" Height="38" 
+                    <Button x:Name="BtnSave" Grid.Column="2" Width="160" Height="38" 
                             Style="{StaticResource PrimaryButtonStyle}" Click="BtnSave_Click">
                         <StackPanel Orientation="Horizontal">
                             <Path Data="{StaticResource IconCheckGeometry}" Fill="White" 
@@ -149,6 +155,7 @@
                             <TextBlock Text="GUARDAR CAMBIOS" FontWeight="Bold"/>
                         </StackPanel>
                     </Button>
+                </Grid>
                 </Grid>
             </Grid>
         </Border>
